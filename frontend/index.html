@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask iQueue</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="iqueue-stripes.svg">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Ask iQueue</h1>
+            <nav>
+                <a href="index.html" class="nav-link active">Chat</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+            </nav>
+        </header>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        Hello! I can help answer questions based on your uploaded documents. Upload some documents first, then ask me anything!
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="input-wrapper">
+                    <input type="text" id="messageInput" placeholder="Type your message here..." disabled>
+                    <button id="sendButton" disabled>Send</button>
+                </div>
+                <div class="status" id="status">Connecting to server...</div>
+            </div>
+        </div>
+
+        <div class="context-info" id="contextInfo" style="display: none;">
+            <h3>Sources Used:</h3>
+            <ul id="sourcesList"></ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
