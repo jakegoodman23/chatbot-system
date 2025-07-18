@@ -78,6 +78,21 @@ class LTChatbot extends HTMLElement {
         if (!this.chatbotId) {
             console.error('LT Chatbot: data-id attribute is required');
         }
+        
+        // Check for session ID in URL parameters
+        this.checkUrlParameters();
+    }
+    
+    checkUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlChatbotId = urlParams.get('chatbot');
+        const urlSessionId = urlParams.get('session');
+        
+        // If URL has chatbot ID that matches or overrides the widget's chatbot ID
+        if (urlChatbotId && (urlChatbotId === this.chatbotId || !this.chatbotId)) {
+            this.chatbotId = urlChatbotId;
+            this.urlSessionId = urlSessionId;
+        }
     }
 
     render() {
@@ -486,23 +501,12 @@ class LTChatbot extends HTMLElement {
                 throw new Error('Chatbot is not active');
             }
 
-            // Create chat session
-            const sessionResponse = await fetch(`${this.apiBase}/chat/sessions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    chatbot_id: this.chatbot.id
-                })
-            });
-
-            if (!sessionResponse.ok) {
-                throw new Error('Failed to create chat session');
+            // Handle session creation or restoration
+            if (this.urlSessionId) {
+                await this.restoreOrCreateSession();
+            } else {
+                await this.createNewSession();
             }
-
-            const sessionData = await sessionResponse.json();
-            this.sessionId = sessionData.session_id;
 
             // Update UI
             this.setLoading(false);
@@ -524,6 +528,103 @@ class LTChatbot extends HTMLElement {
             console.error('Error initializing chatbot:', error);
             this.updateStatus(`Error: ${error.message}`);
             this.showError(error.message);
+        }
+    }
+    
+    async restoreOrCreateSession() {
+        try {
+            // Try to restore the session
+            const response = await fetch(`${this.apiBase}/chat/sessions/${this.urlSessionId}/info`);
+            
+            if (response.ok) {
+                const sessionInfo = await response.json();
+                
+                // Verify session belongs to current chatbot and is active
+                if (sessionInfo.chatbot_id === this.chatbot.id && sessionInfo.chatbot_active) {
+                    this.sessionId = this.urlSessionId;
+                    
+                    // Load chat history if available
+                    if (sessionInfo.has_messages) {
+                        await this.loadChatHistory();
+                    }
+                    
+                    this.updateStatus('Session restored');
+                    return;
+                }
+            }
+            
+            // If restoration failed, create new session
+            console.log('Session restoration failed, creating new session');
+            await this.createNewSession();
+            
+        } catch (error) {
+            console.error('Error restoring session:', error);
+            await this.createNewSession();
+        }
+    }
+    
+    async createNewSession() {
+        const sessionResponse = await fetch(`${this.apiBase}/chat/sessions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                chatbot_id: this.chatbot.id
+            })
+        });
+
+        if (!sessionResponse.ok) {
+            throw new Error('Failed to create chat session');
+        }
+
+        const sessionData = await sessionResponse.json();
+        this.sessionId = sessionData.session_id;
+        
+        // Only update URL if this is a new session (not restoring from URL)
+        if (!this.urlSessionId) {
+            this.updateURL();
+        }
+    }
+    
+    async loadChatHistory() {
+        try {
+            const response = await fetch(`${this.apiBase}/chat/sessions/${this.sessionId}/history?limit=50`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Clear welcome message
+                this.clearMessages();
+                
+                // Add historical messages
+                data.history.forEach(msg => {
+                    this.addMessage(msg.message, 'user');
+                    this.addMessage(msg.response, 'bot');
+                });
+                
+                this.updateStatus(`Loaded ${data.returned_messages} messages`);
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+        }
+    }
+    
+    updateURL() {
+        if (!this.chatbot || !this.sessionId) return;
+        
+        const url = new URL(window.location);
+        url.searchParams.set('chatbot', this.chatbot.id);
+        url.searchParams.set('session', this.sessionId);
+        
+        // Update URL without page reload
+        window.history.pushState({}, '', url);
+    }
+    
+    clearMessages() {
+        const messagesContainer = this.shadowRoot.getElementById('chat-messages');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = '';
         }
     }
 

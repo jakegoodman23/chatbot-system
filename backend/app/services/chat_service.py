@@ -109,3 +109,33 @@ Format your responses using markdown for better readability:
             }
             for msg in reversed(messages)
         ]
+    
+    def get_session(self, session_id: str, db: Session) -> ChatSession:
+        """Get session by ID"""
+        return db.query(ChatSession).filter(ChatSession.session_id == session_id).first()
+    
+    def get_message_count(self, session_id: str, db: Session) -> int:
+        """Get message count for a session"""
+        return db.query(ChatMessage).filter(ChatMessage.session_id == session_id).count()
+    
+    def get_session_with_chatbot_info(self, session_id: str, db: Session) -> Dict[str, Any]:
+        """Get session with chatbot information for deep linking"""
+        session = db.query(ChatSession).filter(ChatSession.session_id == session_id).first()
+        if not session:
+            return None
+        
+        chatbot = self.chatbot_service.get_chatbot(db, session.chatbot_id)
+        if not chatbot:
+            return None
+        
+        message_count = self.get_message_count(session_id, db)
+        
+        return {
+            "session_id": session.session_id,
+            "chatbot_id": session.chatbot_id,
+            "chatbot_name": chatbot.name,
+            "chatbot_active": chatbot.is_active,
+            "created_at": session.created_at,
+            "message_count": message_count,
+            "has_messages": message_count > 0
+        }
