@@ -14,7 +14,9 @@ class ChatApp {
         this.chatbotName = document.getElementById('chatbotName');
         this.chatbotDescription = document.getElementById('chatbotDescription');
         this.backToSelectBtn = document.getElementById('backToSelectBtn');
+        this.shareChatBtn = document.getElementById('shareChatBtn');
         this.typingIndicator = null; // Reference to typing indicator element
+        this.isSharedLink = false; // Track if loading from shared URL
         
         // Check if all elements exist
         if (!this.messageInput || !this.sendButton || !this.chatMessages || !this.status) {
@@ -104,9 +106,13 @@ class ChatApp {
     }
 
     async loadChatbot() {
-        // Check if chatbot is selected from URL or localStorage
+        // Check if chatbot and session are provided from URL
         const urlParams = new URLSearchParams(window.location.search);
         const chatbotId = urlParams.get('chatbot');
+        const sessionId = urlParams.get('session');
+        
+        // If both chatbot and session are in URL, this is a shared link
+        this.isSharedLink = !!(chatbotId && sessionId);
         
         if (chatbotId) {
             // Load chatbot from API
@@ -148,8 +154,14 @@ class ChatApp {
         // Display chatbot info
         this.displayChatbotInfo();
         
-        // Create session for this chatbot
-        await this.createSession();
+        // Handle session restoration or creation
+        if (sessionId) {
+            console.log(`Attempting to restore session: ${sessionId}`);
+            await this.restoreSession(sessionId);
+        } else {
+            console.log('No session ID in URL, creating new session');
+            await this.createSession();
+        }
     }
     
     displayChatbotInfo() {
@@ -166,6 +178,113 @@ class ChatApp {
     
     redirectToSelection() {
         window.location.href = 'select.html';
+    }
+
+    async restoreSession(sessionId) {
+        try {
+            console.log(`Fetching session info for: ${sessionId}`);
+            // Validate session exists and belongs to the chatbot
+            const response = await fetch(`${API_BASE}/chat/sessions/${sessionId}/info`);
+            
+            if (!response.ok) {
+                console.log(`Session not found (${response.status}), showing error`);
+                this.handleSessionRestorationError('Session not found or has expired');
+                return;
+            }
+            
+            const sessionInfo = await response.json();
+            console.log('Session info received:', sessionInfo);
+            
+            // Verify session belongs to the current chatbot
+            if (sessionInfo.chatbot_id !== this.chatbot.id) {
+                console.log(`Session belongs to different chatbot (${sessionInfo.chatbot_id} vs ${this.chatbot.id})`);
+                this.handleSessionRestorationError('This session belongs to a different chatbot');
+                return;
+            }
+            
+            // Check if chatbot is still active
+            if (!sessionInfo.chatbot_active) {
+                console.log('Chatbot is no longer active');
+                this.handleSessionRestorationError('This chatbot is no longer active');
+                return;
+            }
+            
+            // Use the existing session (don't call updateURL to preserve the shared URL)
+            this.sessionId = sessionId;
+            console.log(`Successfully restored session: ${sessionId}`);
+            
+            // Load chat history if it exists
+            if (sessionInfo.has_messages) {
+                console.log(`Loading ${sessionInfo.message_count} messages from history`);
+                await this.loadChatHistory();
+            }
+            
+            this.showShareButton();
+            this.status.textContent = 'Session restored - Ready to chat';
+            
+        } catch (error) {
+            console.error('Error restoring session:', error);
+            this.handleSessionRestorationError('Unable to restore session');
+        }
+    }
+    
+    handleSessionRestorationError(message) {
+        // Show error message
+        this.status.textContent = message;
+        
+        // Disable chat functionality
+        this.messageInput.disabled = true;
+        this.sendButton.disabled = true;
+        
+        // Add error message to chat
+        this.addMessage(`⚠️ ${message}. Please start a new chat session.`, 'bot');
+        
+        // Show option to start new chat
+        const startNewBtn = document.createElement('button');
+        startNewBtn.className = 'btn-primary';
+        startNewBtn.textContent = 'Start New Chat';
+        startNewBtn.style.marginTop = '10px';
+        startNewBtn.onclick = () => {
+            // Clear URL parameters and reload
+            window.location.href = `index.html?chatbot=${this.chatbot.id}`;
+        };
+        
+        const lastMessage = this.chatMessages.lastElementChild;
+        if (lastMessage) {
+            lastMessage.appendChild(startNewBtn);
+        }
+    }
+    
+    async loadChatHistory() {
+        try {
+            const response = await fetch(`${API_BASE}/chat/sessions/${this.sessionId}/history?limit=50`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Clear current messages (except welcome message if it's the only one)
+                const messages = this.chatMessages.querySelectorAll('.message');
+                if (messages.length <= 1) {
+                    this.chatMessages.innerHTML = '';
+                } else {
+                    // Remove all messages except the first (welcome) message
+                    for (let i = 1; i < messages.length; i++) {
+                        messages[i].remove();
+                    }
+                }
+                
+                // Add historical messages
+                data.history.forEach(msg => {
+                    this.addMessage(msg.message, 'user');
+                    this.addMessage(msg.response, 'bot');
+                });
+                
+                this.status.textContent = `Loaded ${data.returned_messages} messages from history`;
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+            this.status.textContent = 'Could not load chat history';
+        }
     }
 
     async createSession() {
@@ -187,12 +306,68 @@ class ChatApp {
             if (response.ok) {
                 const data = await response.json();
                 this.sessionId = data.session_id;
+                this.updateURL();
+                this.showShareButton();
                 this.status.textContent = 'Ready to chat';
             }
         } catch (error) {
             console.error('Error creating session:', error);
             this.status.textContent = 'Error creating chat session';
         }
+    }
+    
+    updateURL() {
+        if (!this.chatbot || !this.sessionId) return;
+        
+        const url = new URL(window.location);
+        url.searchParams.set('chatbot', this.chatbot.id);
+        url.searchParams.set('session', this.sessionId);
+        
+        // Update URL without page reload
+        window.history.pushState({}, '', url);
+    }
+    
+    showShareButton() {
+        if (this.shareChatBtn && this.sessionId) {
+            this.shareChatBtn.style.display = 'inline-block';
+        }
+    }
+    
+    shareChat() {
+        if (!this.chatbot || !this.sessionId) {
+            this.status.textContent = 'No session available to share';
+            return;
+        }
+        
+        const shareUrl = new URL(window.location.origin + window.location.pathname);
+        shareUrl.searchParams.set('chatbot', this.chatbot.id);
+        shareUrl.searchParams.set('session', this.sessionId);
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(shareUrl.toString()).then(() => {
+            // Show temporary success message
+            const originalText = this.shareChatBtn.textContent;
+            this.shareChatBtn.textContent = '✓ Copied!';
+            this.shareChatBtn.style.backgroundColor = '#48bb78';
+            
+            setTimeout(() => {
+                this.shareChatBtn.textContent = originalText;
+                this.shareChatBtn.style.backgroundColor = '';
+            }, 2000);
+            
+            this.status.textContent = 'Chat link copied to clipboard!';
+            
+            setTimeout(() => {
+                this.status.textContent = 'Ready to chat';
+            }, 3000);
+            
+        }).catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+            
+            // Fallback: show the URL in an alert
+            alert(`Share this URL:\n\n${shareUrl.toString()}`);
+            this.status.textContent = 'Share URL displayed in dialog';
+        });
     }
 
     setupEventListeners() {
@@ -211,6 +386,10 @@ class ChatApp {
         
         this.backToSelectBtn.addEventListener('click', () => {
             this.redirectToSelection();
+        });
+        
+        this.shareChatBtn.addEventListener('click', () => {
+            this.shareChat();
         });
     }
 

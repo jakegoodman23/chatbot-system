@@ -53,15 +53,26 @@ async def get_chat_history(
     limit: int = 10,
     db: Session = Depends(get_db)
 ):
-    """Get chat history for a session"""
+    """Get chat history for a session with metadata"""
     try:
+        session = chat_service.get_session(session_id, db)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
         history = chat_service.get_chat_history(session_id, db, limit)
+        total_count = chat_service.get_message_count(session_id, db)
+        
         return {
             "session_id": session_id,
+            "chatbot_id": session.chatbot_id,
             "history": history,
-            "total_messages": len(history)
+            "total_messages": total_count,
+            "returned_messages": len(history),
+            "created_at": session.created_at
         }
     
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving chat history: {str(e)}")
 
@@ -79,6 +90,47 @@ async def create_session(request: SessionRequest, db: Session = Depends(get_db))
         "chatbot_id": session.chatbot_id,
         "created_at": session.created_at
     }
+
+@router.get("/sessions/{session_id}")
+async def get_session(
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get session details for deep linking"""
+    try:
+        session = chat_service.get_session(session_id, db)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        return {
+            "session_id": session.session_id,
+            "chatbot_id": session.chatbot_id,
+            "created_at": session.created_at,
+            "message_count": chat_service.get_message_count(session_id, db)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving session: {str(e)}")
+
+@router.get("/sessions/{session_id}/info")
+async def get_session_info(
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get session and chatbot info for deep linking validation"""
+    try:
+        session_info = chat_service.get_session_with_chatbot_info(session_id, db)
+        if not session_info:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        return session_info
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving session info: {str(e)}")
 
 @router.get("/health")
 async def health_check():
