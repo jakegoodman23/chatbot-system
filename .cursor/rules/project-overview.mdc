@@ -1,0 +1,45 @@
+# Healthcare IT Chatbot Platform
+
+This is a locally-hosted multi-chatbot platform designed for healthcare IT companies to provide hospital systems with software to optimize their workflows. The platform enables creation of specialized chatbots with RAG capabilities for efficient document-based assistance.
+
+## Core Architecture
+
+- **Backend**: FastAPI with Python ([backend/app/main.py](mdc:backend/app/main.py))
+- **Database**: PostgreSQL with pgvector extension for vector storage
+- **Frontend**: Vanilla HTML/CSS/JavaScript with responsive design
+- **Containerization**: Docker Compose for easy deployment ([docker-compose.yml](mdc:docker-compose.yml))
+
+## Key Components
+
+### Backend Structure
+- **Models**: SQLAlchemy ORM models in [backend/app/models.py](mdc:backend/app/models.py)
+- **Routers**: API endpoints in [backend/app/routers/](mdc:backend/app/routers/)
+- **Services**: Business logic in [backend/app/services/](mdc:backend/app/services/)
+- **Database**: Connection and setup in [backend/app/database.py](mdc:backend/app/database.py)
+
+### Frontend Structure
+- **Main Interface**: [frontend/index.html](mdc:frontend/index.html) - Chat interface
+- **Selection Page**: [frontend/select.html](mdc:frontend/select.html) - Chatbot selection
+- **Admin Panel**: [frontend/admin.html](mdc:frontend/admin.html) - Management interface
+- **Styling**: [frontend/style.css](mdc:frontend/style.css) - Responsive design
+- **Widget**: [frontend/widget/](mdc:frontend/widget/) - Embeddable chatbot widgets
+
+## Healthcare IT Focus
+
+- **Workflow Optimization**: Designed for hospital system efficiency
+- **Multi-Chatbot Support**: Create specialized bots for different departments
+- **Document Management**: RAG-powered responses from healthcare documents
+- **Easy Integration**: Embeddable widgets for existing hospital systems
+- **Local Deployment**: HIPAA-compliant local hosting option
+
+## Development Guidelines
+
+- Write production-ready code with healthcare IT standards
+- Focus on user experience for hospital staff
+- Ensure security and privacy compliance
+- Maintain clear documentation for hospital IT teams
+- Test thoroughly for healthcare workflow scenarios
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,55 @@
+# Frontend Development Guidelines
+
+## Architecture
+
+The frontend uses vanilla HTML/CSS/JavaScript for maximum compatibility with hospital systems:
+
+- **Main Chat**: [frontend/index.html](mdc:frontend/index.html) - Primary chat interface
+- **Selection**: [frontend/select.html](mdc:frontend/select.html) - Chatbot selection page
+- **Admin**: [frontend/admin.html](mdc:frontend/admin.html) - Management interface
+- **Styling**: [frontend/style.css](mdc:frontend/style.css) - Responsive healthcare UI
+- **Widget**: [frontend/widget/](mdc:frontend/widget/) - Embeddable components
+
+## Healthcare UI Standards
+
+- **Accessibility**: WCAG 2.1 AA compliance for hospital staff
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **High Contrast**: Clear visibility in hospital lighting conditions
+- **Touch-Friendly**: Large touch targets for mobile use
+- **Error Prevention**: Clear validation and confirmation dialogs
+
+## JavaScript Guidelines
+
+- Use vanilla JavaScript for maximum hospital system compatibility
+- Implement proper error handling for network issues
+- Use async/await for API calls with loading states
+- Include comprehensive logging for troubleshooting
+- Follow healthcare IT naming conventions
+
+## CSS Standards
+
+- Use CSS Grid and Flexbox for responsive layouts
+- Implement consistent spacing and typography
+- Use semantic color names for healthcare contexts
+- Ensure proper focus states for accessibility
+- Test across different screen sizes and browsers
+
+## Widget Development
+
+- Create embeddable components for hospital systems
+- Use iframe-safe communication patterns
+- Implement proper error boundaries
+- Ensure consistent styling across different contexts
+- Provide clear documentation for hospital IT teams
+
+## Performance Considerations
+
+- Minimize bundle size for hospital network constraints
+- Implement proper caching strategies
+- Use lazy loading for non-critical resources
+- Optimize for slower hospital network connections
+- Test performance on various hospital devices
+description:
+globs:
+alwaysApply: false
+---

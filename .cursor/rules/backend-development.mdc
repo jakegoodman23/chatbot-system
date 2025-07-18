@@ -1,0 +1,49 @@
+# Backend Development Guidelines
+
+## FastAPI Structure
+
+The backend follows a clean architecture pattern with clear separation of concerns:
+
+- **Models**: SQLAlchemy ORM models in [backend/app/models.py](mdc:backend/app/models.py)
+- **Routers**: API route handlers in [backend/app/routers/](mdc:backend/app/routers/)
+- **Services**: Business logic in [backend/app/services/](mdc:backend/app/services/)
+- **Database**: Connection management in [backend/app/database.py](mdc:backend/app/database.py)
+
+## Database Models
+
+Key models for healthcare IT workflows:
+
+- **Chatbot**: Multi-tenant chatbot instances with isolated knowledge bases
+- **Document**: Healthcare documents with vector embeddings for RAG
+- **DocumentChunk**: Processed document segments with pgvector embeddings
+- **ChatSession**: Persistent chat sessions for hospital staff
+- **ChatMessage**: Individual messages with context tracking
+- **AdminSettings**: Configuration management for hospital IT teams
+
+## API Design Principles
+
+- Use FastAPI's automatic validation and documentation
+- Implement proper error handling for healthcare workflows
+- Include comprehensive logging for audit trails
+- Follow RESTful conventions for hospital system integration
+- Use proper HTTP status codes for healthcare IT standards
+
+## Security Considerations
+
+- Implement proper authentication for hospital staff access
+- Ensure data privacy for patient-related information
+- Use secure session management
+- Validate all inputs to prevent injection attacks
+- Log access for healthcare compliance requirements
+
+## Healthcare IT Standards
+
+- Write code that's maintainable by hospital IT teams
+- Include comprehensive error messages for troubleshooting
+- Implement proper data validation for medical document processing
+- Use clear naming conventions for healthcare workflows
+- Ensure backward compatibility for hospital system updates
+description:
+globs:
+alwaysApply: false
+---

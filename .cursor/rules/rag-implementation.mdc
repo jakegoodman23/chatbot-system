@@ -1,0 +1,63 @@
+# RAG Implementation Guidelines
+
+## Document Processing Pipeline
+
+The RAG system processes healthcare documents for intelligent responses:
+
+- **Document Processor**: [backend/app/services/document_processor.py](mdc:backend/app/services/document_processor.py)
+- **Embeddings Service**: [backend/app/services/embeddings.py](mdc:backend/app/services/embeddings.py)
+- **Chat Service**: [backend/app/services/chat_service.py](mdc:backend/app/services/chat_service.py)
+- **Chatbot Service**: [backend/app/services/chatbot_service.py](mdc:backend/app/services/chatbot_service.py)
+
+## Healthcare Document Handling
+
+- **File Types**: Support for PDF and TXT medical documents
+- **Chunking**: Intelligent text splitting with configurable overlap
+- **Embeddings**: OpenAI text-embedding-ada-002 for medical content
+- **Vector Storage**: pgvector for efficient similarity search
+- **Context Retrieval**: Top-K results for healthcare accuracy
+
+## Document Processing Workflow
+
+1. **Upload**: Healthcare documents uploaded to specific chatbots
+2. **Extraction**: Content extracted from PDF/TXT files
+3. **Chunking**: Text split into manageable segments
+4. **Embedding**: OpenAI embeddings generated for each chunk
+5. **Storage**: Vectors stored in PostgreSQL with pgvector
+6. **Indexing**: Efficient similarity search capabilities
+
+## RAG Response Generation
+
+- **Query Processing**: User questions converted to embeddings
+- **Similarity Search**: Find most relevant document chunks
+- **Context Assembly**: Combine relevant chunks for context
+- **LLM Integration**: OpenAI GPT-4o for response generation
+- **Response Formatting**: Markdown support for healthcare content
+
+## Healthcare-Specific Considerations
+
+- **Medical Terminology**: Handle specialized healthcare vocabulary
+- **Document Types**: Process clinical guidelines, protocols, manuals
+- **Accuracy**: Ensure high precision for medical information
+- **Privacy**: Maintain patient data confidentiality
+- **Compliance**: Follow healthcare documentation standards
+
+## Performance Optimization
+
+- **Chunk Size**: Optimize for healthcare document characteristics
+- **Overlap**: Balance context preservation with efficiency
+- **Caching**: Cache frequently accessed embeddings
+- **Batch Processing**: Efficient bulk document processing
+- **Error Handling**: Robust processing for various document formats
+
+## Quality Assurance
+
+- **Validation**: Verify document processing accuracy
+- **Testing**: Test with real healthcare documents
+- **Monitoring**: Track processing performance and errors
+- **Feedback**: Incorporate user feedback for improvements
+- **Documentation**: Clear documentation for hospital IT teams
+description:
+globs:
+alwaysApply: false
+---

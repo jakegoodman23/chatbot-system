@@ -1,0 +1,119 @@
+# Healthcare IT Testing Guidelines
+
+## Testing Philosophy
+
+- **Healthcare Accuracy**: Prioritize accuracy and reliability for medical workflows
+- **User Experience**: Test from hospital staff perspective
+- **Comprehensive Coverage**: Test all healthcare scenarios and edge cases
+- **Performance**: Test under realistic hospital network conditions
+- **Security**: Thorough security testing for patient data protection
+
+## Test Categories
+
+### Unit Testing
+- Test individual functions and classes
+- Mock external dependencies (OpenAI API, database)
+- Test healthcare-specific business logic
+- Verify error handling for medical workflows
+- Test data validation for healthcare inputs
+
+### Integration Testing
+- Test API endpoints with healthcare data
+- Verify database operations with medical documents
+- Test RAG pipeline with healthcare content
+- Verify chatbot interactions with medical queries
+- Test document processing with healthcare files
+
+### End-to-End Testing
+- Test complete healthcare workflows
+- Verify chatbot responses with medical documents
+- Test admin panel functionality
+- Verify widget integration in hospital systems
+- Test multi-chatbot scenarios
+
+### Performance Testing
+- Test with realistic healthcare data volumes
+- Verify response times under hospital network conditions
+- Test concurrent user scenarios
+- Monitor resource usage during peak loads
+- Test vector similarity search performance
+
+### Security Testing
+- Test authentication and authorization
+- Verify data privacy for patient information
+- Test input validation and injection prevention
+- Verify secure communication protocols
+- Test audit trail functionality
+
+## Healthcare-Specific Testing
+
+### Medical Document Processing
+- Test PDF and TXT file processing
+- Verify medical terminology handling
+- Test document chunking with healthcare content
+- Verify embedding generation for medical text
+- Test similarity search with medical queries
+
+### Chatbot Functionality
+- Test healthcare-specific system prompts
+- Verify accurate responses to medical questions
+- Test context retrieval from healthcare documents
+- Verify session management for hospital staff
+- Test multi-chatbot isolation
+
+### User Interface Testing
+- Test accessibility compliance for hospital staff
+- Verify responsive design on hospital devices
+- Test touch interfaces for mobile use
+- Verify high contrast visibility
+- Test error handling and user feedback
+
+## Testing Tools and Frameworks
+
+### Backend Testing
+- pytest for Python unit and integration tests
+- FastAPI TestClient for API testing
+- SQLAlchemy testing utilities
+- Mock libraries for external dependencies
+- Coverage reporting for healthcare code
+
+### Frontend Testing
+- Browser testing tools for hospital interfaces
+- Accessibility testing tools (axe-core)
+- Performance testing tools
+- Cross-browser compatibility testing
+- Mobile device testing
+
+### Healthcare Data Testing
+- Synthetic healthcare data for testing
+- HIPAA-compliant test data sets
+- Medical document samples
+- Healthcare workflow scenarios
+- Edge case medical queries
+
+## Quality Assurance Process
+
+### Pre-Deployment Testing
+- Automated test suites for all changes
+- Manual testing of healthcare workflows
+- Performance testing under load
+- Security vulnerability scanning
+- Accessibility compliance verification
+
+### Post-Deployment Monitoring
+- Monitor chatbot response accuracy
+- Track performance metrics in hospital environments
+- Monitor error rates and user feedback
+- Verify data privacy compliance
+- Monitor system resource usage
+
+### Continuous Improvement
+- Collect feedback from hospital staff
+- Analyze chatbot interaction patterns
+- Identify areas for healthcare workflow optimization
+- Update test cases based on real usage
+- Maintain test data relevance to healthcare scenarios
+description:
+globs:
+alwaysApply: false
+---

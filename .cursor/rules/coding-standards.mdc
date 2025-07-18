@@ -1,0 +1,76 @@
+# Healthcare IT Coding Standards
+
+## Code Quality Principles
+
+- **Production-Ready**: Write code as if it's going to production immediately
+- **Healthcare Focus**: Prioritize accuracy, reliability, and user experience for hospital staff
+- **Maintainability**: Code should be easily maintainable by hospital IT teams
+- **Documentation**: Clear, comprehensive documentation for healthcare workflows
+- **Testing**: Thorough testing for healthcare scenarios and edge cases
+
+## Python Standards (Backend)
+
+- Use type hints for all function parameters and return values
+- Follow PEP 8 style guidelines with healthcare-specific naming
+- Implement comprehensive error handling for medical workflows
+- Use async/await for I/O operations (database, API calls)
+- Include docstrings for all functions and classes
+- Use environment variables for configuration
+
+## JavaScript Standards (Frontend)
+
+- Use vanilla JavaScript for maximum hospital system compatibility
+- Implement proper error handling and user feedback
+- Use async/await for API calls with loading states
+- Follow consistent naming conventions for healthcare contexts
+- Include comprehensive logging for troubleshooting
+- Validate all user inputs thoroughly
+
+## Database Standards
+
+- Use descriptive table and column names for healthcare data
+- Implement proper foreign key constraints and cascading
+- Use appropriate data types for medical information
+- Include audit trails for all data changes
+- Implement proper indexing for healthcare queries
+- Use transactions for data integrity
+
+## API Design Standards
+
+- Use RESTful conventions for hospital system integration
+- Implement proper HTTP status codes and error messages
+- Use FastAPI's automatic validation and documentation
+- Include comprehensive logging for audit trails
+- Implement rate limiting for healthcare API usage
+- Use proper authentication and authorization
+
+## Security Standards
+
+- Validate all inputs to prevent injection attacks
+- Use environment variables for sensitive configuration
+- Implement proper session management
+- Log access for healthcare compliance requirements
+- Use HTTPS for all communications
+- Follow OWASP security guidelines
+
+## Healthcare IT Specific
+
+- Use clear, medical terminology in code comments
+- Implement proper data privacy for patient information
+- Include comprehensive error messages for hospital IT teams
+- Test thoroughly with healthcare workflow scenarios
+- Ensure backward compatibility for hospital system updates
+- Document all healthcare-specific business logic
+
+## Performance Standards
+
+- Optimize for hospital network constraints
+- Implement proper caching strategies
+- Use efficient database queries for healthcare data
+- Monitor performance in hospital environments
+- Implement proper resource management
+- Test with realistic healthcare data volumes
+description:
+globs:
+alwaysApply: false
+---

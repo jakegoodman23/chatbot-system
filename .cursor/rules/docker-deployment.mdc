@@ -1,0 +1,63 @@
+# Docker Deployment Guidelines
+
+## Container Architecture
+
+The platform uses Docker Compose for healthcare IT deployment:
+
+- **PostgreSQL**: pgvector database with healthcare data
+- **Backend**: FastAPI application with healthcare services
+- **Frontend**: Nginx serving static files for hospital interfaces
+- **Configuration**: Environment-based setup for different hospital environments
+
+## Healthcare IT Deployment Standards
+
+- **Local Deployment**: HIPAA-compliant local hosting option
+- **Environment Variables**: Secure configuration management
+- **Health Checks**: Monitor service availability for hospital systems
+- **Logging**: Comprehensive audit trails for healthcare compliance
+- **Backup**: Automated backup procedures for medical data
+
+## Docker Compose Configuration
+
+Key services defined in [docker-compose.yml](mdc:docker-compose.yml):
+
+- **postgres**: PostgreSQL with pgvector extension
+- **backend**: FastAPI application with healthcare APIs
+- **frontend**: Nginx serving hospital interfaces
+- **volumes**: Persistent storage for healthcare data
+
+## Security Considerations
+
+- Use environment variables for sensitive configuration
+- Implement proper network isolation
+- Use non-root users in containers
+- Scan images for vulnerabilities
+- Implement proper access controls for hospital data
+
+## Performance Optimization
+
+- Use appropriate resource limits for hospital environments
+- Implement proper caching strategies
+- Monitor container resource usage
+- Optimize for hospital network constraints
+- Use health checks for service reliability
+
+## Deployment Scripts
+
+- [run.sh](mdc:run.sh) - Main deployment script
+- [claude_here.sh](mdc:claude_here.sh) - Development setup
+- Environment-specific configurations
+- Backup and recovery procedures
+- Monitoring and alerting setup
+
+## Healthcare IT Integration
+
+- Ensure compatibility with hospital network policies
+- Implement proper SSL/TLS for secure communication
+- Use hospital-approved base images when possible
+- Document deployment procedures for IT teams
+- Test deployment in hospital-like environments
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,54 @@
+# Database Migration Guidelines
+
+## PostgreSQL with pgvector
+
+The platform uses PostgreSQL with pgvector extension for vector storage:
+
+- **Vector Storage**: pgvector for document embeddings
+- **Migrations**: SQL-based migrations in [backend/migrations/](mdc:backend/migrations/)
+- **Initialization**: Database setup in [init.sql](mdc:init.sql)
+- **Connection**: Managed in [backend/app/database.py](mdc:backend/app/database.py)
+
+## Migration Best Practices
+
+- Use descriptive migration names for healthcare workflows
+- Include both up and down migrations when possible
+- Test migrations on sample healthcare data
+- Document changes for hospital IT teams
+- Use transactions for data integrity
+
+## Vector Operations
+
+- Store OpenAI embeddings (1536 dimensions) in pgvector columns
+- Use cosine similarity for document retrieval
+- Implement proper indexing for performance
+- Handle vector operations efficiently for healthcare documents
+- Monitor vector storage usage
+
+## Healthcare Data Considerations
+
+- Implement proper data retention policies
+- Use appropriate data types for medical information
+- Include audit trails for data changes
+- Ensure HIPAA compliance in database design
+- Implement proper backup and recovery procedures
+
+## Performance Optimization
+
+- Use appropriate indexes for healthcare queries
+- Monitor query performance with healthcare data volumes
+- Implement connection pooling for hospital system loads
+- Use prepared statements for security
+- Optimize vector similarity searches
+
+## Migration Execution
+
+- Run migrations using [backend/run_migrations.py](mdc:backend/run_migrations.py)
+- Test migrations in development before production
+- Backup data before running migrations
+- Monitor migration execution in hospital environments
+- Document rollback procedures for hospital IT teams
+description:
+globs:
+alwaysApply: false
+---
