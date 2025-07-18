@@ -271,6 +271,68 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Embed Code Modal Styles */
+        .embed-section {
+            margin-bottom: 24px;
+        }
+
+        .code-block {
+            position: relative;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 16px;
+            padding-right: 60px;
+            background: transparent;
+            color: #2d3748;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .copy-btn.copied {
+            background: #48bb78;
+        }
+
+        .embed-section h5 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .embed-section h6 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -285,31 +347,65 @@
                     <a href="admin.html" class="nav-link active">Admin</a>
                 </nav>
                 <nav class="admin-tabs">
-                    <div class="admin-tab active" data-tab="documents">Documents & Upload</div>
-                    <div class="admin-tab" data-tab="system-prompt">System Prompt</div>
                 </nav>
             </header>
 
-
-            <!-- System Prompt Section -->
-            <div class="admin-section" id="system-prompt">
-                <h2>💬 System Prompt</h2>
-                <div id="promptMessage" style="display: none;"></div>
-                <div class="form-group">
-                    <label class="form-label" for="systemPrompt">System Prompt</label>
-                    <p style="font-size: 14px; color: #718096; margin-bottom: 10px;">
-                        ℹ️ Note: Markdown formatting instructions are automatically appended to ensure proper response formatting.
-                    </p>
-                    <textarea id="systemPrompt" class="prompt-editor" placeholder="Loading system prompt..."></textarea>
+            <!-- Chatbots Section -->
+            <div class="admin-section active" id="chatbots">
+                <h2>🤖 Chatbot Management</h2>
+                <div id="chatbotMessage" style="display: none;"></div>
+                
+                <div class="chatbot-actions" style="margin-bottom: 30px;">
+                    <button class="btn btn-primary" id="createChatbotBtn">Create New Chatbot</button>
+                    <button class="btn btn-secondary" id="refreshChatbotsBtn">Refresh</button>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button id="savePromptBtn" class="btn btn-primary">Save Changes</button>
-                    <button id="resetPromptBtn" class="btn btn-secondary">Reset to Default</button>
+                
+                <div class="chatbots-list" id="chatbotsList">
+                    <div class="loading">Loading chatbots...</div>
                 </div>
             </div>
 
-            <!-- Documents & Upload Section -->
-            <div class="admin-section active" id="documents">
+            <!-- Chatbot Document Management Section (Hidden by default) -->
+            <div class="admin-section" id="chatbot-documents" style="display: none;">
+                <div style="margin-bottom: 20px; padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 4px solid #667eea;">
+                    <span style="color: #4a5568;">📍 Managing documents for: <strong id="docManagementChatbotName"></strong></span>
+                    <button class="btn btn-secondary small" onclick="adminPanel.exitDocumentManagement()" style="margin-left: 12px;">← Back to Chatbots</button>
+                </div>
+                
+                <div class="upload-container">
+                    <div class="upload-section">
+                        <h2 id="docUploadTitle">📄 Upload Documents</h2>
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-icon">📄</div>
+                            <p>Drag and drop files here or click to browse</p>
+                            <p class="file-types">Supported: PDF, TXT files</p>
+                            <input type="file" id="fileInput" accept=".pdf,.txt" multiple style="display: none;">
+                        </div>
+                        
+                        <div class="upload-progress" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text" id="progressText">Uploading...</div>
+                        </div>
+                    </div>
+
+                    <div class="documents-section">
+                        <h2 id="docListTitle">Documents</h2>
+                        <div id="documentMessage" style="display: none;"></div>
+                        <div class="documents-list" id="documentsList">
+                            <div class="loading">Loading documents...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents & Upload Section (Keep for backward compatibility, but hide) -->
+            <div class="admin-section" id="documents" style="display: none !important;">
+                <div id="documentBreadcrumb" style="display: none; margin-bottom: 20px; padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 4px solid #667eea;">
+                    <span style="color: #4a5568;">📍 Managing documents for: <strong id="breadcrumbChatbotName"></strong></span>
+                    <button class="btn btn-secondary small" onclick="adminPanel.switchTab('chatbots')" style="margin-left: 12px;">← Back to Chatbots</button>
+                </div>
                 <div class="upload-container">
                     <div class="upload-section">
                         <h2>📄 Upload Documents</h2>
@@ -338,19 +434,81 @@
                 </div>
             </div>
         </div>
+
+        <!-- Embed Code Modal -->
+        <div id="embedModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h3>🔗 Embed Code</h3>
+                    <span class="close" onclick="adminPanel.hideEmbedModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 24px;">
+                        <h4 style="color: #4a5568; margin-bottom: 8px;">Embed <span id="embedChatbotName"></span> on Your Website</h4>
+                        <p style="color: #718096; font-size: 14px;">Copy and paste these code snippets to add this chatbot to any webpage.</p>
+                    </div>
+
+                    <div class="embed-section">
+                        <h5 style="color: #4a5568; margin-bottom: 12px;">📄 Basic Inline Widget</h5>
+                        <div class="code-block">
+                            <pre id="basicEmbedCode"></pre>
+                            <button class="copy-btn" onclick="adminPanel.copyToClipboard('basicEmbedCode')">📋 Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="embed-section">
+                        <h5 style="color: #4a5568; margin-bottom: 12px;">💬 Floating Chat Widget</h5>
+                        <div class="code-block">
+                            <pre id="floatingEmbedCode"></pre>
+                            <button class="copy-btn" onclick="adminPanel.copyToClipboard('floatingEmbedCode')">📋 Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="embed-section">
+                        <h5 style="color: #4a5568; margin-bottom: 12px;">🎨 Customized Widget</h5>
+                        <div class="code-block">
+                            <pre id="customEmbedCode"></pre>
+                            <button class="copy-btn" onclick="adminPanel.copyToClipboard('customEmbedCode')">📋 Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="embed-section">
+                        <h5 style="color: #4a5568; margin-bottom: 12px;">⚙️ Installation</h5>
+                        <p style="color: #718096; font-size: 14px; margin-bottom: 12px;">
+                            Add this script tag to your HTML head section (only needed once per page):
+                        </p>
+                        <div class="code-block">
+                            <pre id="scriptEmbedCode"></pre>
+                            <button class="copy-btn" onclick="adminPanel.copyToClipboard('scriptEmbedCode')">📋 Copy</button>
+                        </div>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 16px; border-radius: 8px; margin-top: 24px;">
+                        <h6 style="color: #4a5568; margin-bottom: 8px;">💡 Tips:</h6>
+                        <ul style="color: #718096; font-size: 14px; margin: 0; padding-left: 20px;">
+                            <li>The widget will automatically load and connect to your chatbot</li>
+                            <li>Use <code>data-mode="floating"</code> for a minimize/maximize chat bubble</li>
+                            <li>Customize colors with CSS variables like <code>--primary-color</code></li>
+                            <li>The widget is responsive and works on mobile devices</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const API_BASE = '/api';
         class AdminPanel {
             constructor() {
-                this.currentTab = 'documents';
+                this.currentTab = 'chatbots';
+                this.chatbots = [];
                 this.init();
             }
 
             async init() {
                 this.setupEventListeners();
-                await this.loadSystemPrompt();
+                await this.loadChatbots();
                 await this.loadDocuments();
             }
 
@@ -365,11 +523,30 @@
                     });
                 });
 
-                // Save prompt button
-                document.getElementById('savePromptBtn').addEventListener('click', () => this.saveSystemPrompt());
+                // Chatbot management
+                document.getElementById('createChatbotBtn').addEventListener('click', () => this.createChatbot());
+                document.getElementById('refreshChatbotsBtn').addEventListener('click', () => this.loadChatbots());
 
-                // Reset prompt button
-                document.getElementById('resetPromptBtn').addEventListener('click', () => this.resetSystemPrompt());
+                // Modal event listeners
+                this.setupModalEventListeners();
+            }
+
+            setupModalEventListeners() {
+                const embedModal = document.getElementById('embedModal');
+                
+                // Close modal when clicking outside
+                embedModal.addEventListener('click', (e) => {
+                    if (e.target === embedModal) {
+                        this.hideEmbedModal();
+                    }
+                });
+                
+                // Close modal with escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && embedModal.style.display === 'block') {
+                        this.hideEmbedModal();
+                    }
+                });
             }
 
             setupUploadHandlers() {
@@ -409,70 +586,124 @@
                 document.getElementById(tabName).classList.add('active');
                 
                 this.currentTab = tabName;
-
             }
 
-            async loadSystemPrompt() {
-                try {
-                    const response = await fetch(`${API_BASE}/admin/system-prompt`);
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        document.getElementById('systemPrompt').value = data.system_prompt;
-                    }
-                } catch (error) {
-                    console.error('Error loading system prompt:', error);
-                }
-            }
-
-            async saveSystemPrompt() {
-                const prompt = document.getElementById('systemPrompt').value;
-                const messageDiv = document.getElementById('promptMessage');
-
-                try {
-                    const response = await fetch(`${API_BASE}/admin/system-prompt`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ prompt })
-                    });
-
-                    if (response.ok) {
-                        messageDiv.className = 'success-message';
-                        messageDiv.textContent = 'System prompt updated successfully!';
-                        messageDiv.style.display = 'block';
-                        setTimeout(() => messageDiv.style.display = 'none', 3000);
-                    } else {
-                        throw new Error('Failed to save prompt');
-                    }
-                } catch (error) {
-                    messageDiv.className = 'error-message';
-                    messageDiv.textContent = 'Error saving system prompt';
-                    messageDiv.style.display = 'block';
-                    setTimeout(() => messageDiv.style.display = 'none', 3000);
-                }
-            }
-
-            resetSystemPrompt() {
-                const defaultPrompt = `You are a helpful assistant that answers questions based on the provided context. 
-Use the context information to provide accurate and relevant answers. If the context doesn't contain 
-enough information to answer the question, say so clearly. Always be truthful and don't make up information.`;
+            async loadChatbots() {
+                const container = document.getElementById('chatbotsList');
                 
-                document.getElementById('systemPrompt').value = defaultPrompt;
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/`);
+                    
+                    if (response.ok) {
+                        this.chatbots = await response.json();
+                        
+                        if (this.chatbots.length === 0) {
+                            container.innerHTML = '<div class="no-documents">No chatbots created yet.</div>';
+                            return;
+                        }
+
+                        container.innerHTML = this.chatbots.map(chatbot => `
+                            <div class="document-item chatbot-item">
+                                <div class="document-info">
+                                    <div class="document-name">
+                                        ${chatbot.name}
+                                        ${!chatbot.is_active ? '<span style="color: #f56565; font-size: 12px; margin-left: 8px;">(INACTIVE)</span>' : ''}
+                                    </div>
+                                    <div class="document-meta">
+                                        ${chatbot.description || 'No description'} • 
+                                        Created: ${new Date(chatbot.created_at).toLocaleDateString()}
+                                        <br><span id="chatbot-${chatbot.id}-docs">📄 Loading documents...</span>
+                                    </div>
+                                </div>
+                                <div class="document-actions">
+                                    <button class="btn btn-primary" onclick="adminPanel.manageChatbotDocuments(${chatbot.id}, '${chatbot.name}')">📄 Manage Documents</button>
+                                    <button class="btn btn-primary" onclick="adminPanel.showEmbedCode(${chatbot.id}, '${chatbot.name}')">🔗 Embed Code</button>
+                                    <button class="btn btn-primary" onclick="adminPanel.editChatbot(${chatbot.id})">✏️ Edit</button>
+                                    <button class="btn ${chatbot.is_active ? 'btn-secondary' : 'btn-primary'}" 
+                                            onclick="adminPanel.toggleChatbot(${chatbot.id}, ${chatbot.is_active})">
+                                        ${chatbot.is_active ? '⏸️ Deactivate' : '▶️ Activate'}
+                                    </button>
+                                    <button class="btn btn-danger" onclick="adminPanel.deleteChatbot(${chatbot.id}, '${chatbot.name}')">🗑️ Delete</button>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        // Load document counts for each chatbot
+                        this.loadChatbotDocumentCounts();
+                    }
+                } catch (error) {
+                    container.innerHTML = '<div class="error">Error loading chatbots</div>';
+                }
             }
 
-            async loadDocuments() {
+            async loadChatbotDocumentCounts() {
+                for (const chatbot of this.chatbots) {
+                    try {
+                        const response = await fetch(`${API_BASE}/documents/?chatbot_id=${chatbot.id}`);
+                        if (response.ok) {
+                            const documents = await response.json();
+                            const docSpan = document.getElementById(`chatbot-${chatbot.id}-docs`);
+                            if (docSpan) {
+                                docSpan.textContent = `📄 ${documents.length} documents`;
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Error loading documents for chatbot ${chatbot.id}:`, error);
+                        const docSpan = document.getElementById(`chatbot-${chatbot.id}-docs`);
+                        if (docSpan) {
+                            docSpan.textContent = `📄 Error loading`;
+                        }
+                    }
+                }
+            }
+
+            manageChatbotDocuments(chatbotId, chatbotName) {
+                // Store current chatbot for document management
+                this.currentChatbotId = chatbotId;
+                this.currentChatbotName = chatbotName;
+                
+                // Hide chatbots section and show document management section
+                document.getElementById('chatbots').style.display = 'none';
+                document.getElementById('chatbot-documents').style.display = 'block';
+                
+                // Update the section title and breadcrumb
+                document.getElementById('docManagementChatbotName').textContent = chatbotName;
+                document.getElementById('docUploadTitle').textContent = `📄 Upload Documents for ${chatbotName}`;
+                document.getElementById('docListTitle').textContent = `Documents for ${chatbotName}`;
+                
+                // Load documents for this chatbot
+                this.loadChatbotDocuments(chatbotId, chatbotName);
+            }
+
+            exitDocumentManagement() {
+                // Clear current chatbot context
+                this.currentChatbotId = null;
+                this.currentChatbotName = null;
+                
+                // Show chatbots section and hide document management section
+                document.getElementById('chatbot-documents').style.display = 'none';
+                document.getElementById('chatbots').style.display = 'block';
+                
+                // Reload chatbots to refresh document counts
+                this.loadChatbots();
+            }
+
+            async loadChatbotDocuments(chatbotId, chatbotName) {
                 const container = document.getElementById('documentsList');
                 
                 try {
-                    const response = await fetch(`${API_BASE}/documents/`);
-
+                    const response = await fetch(`${API_BASE}/documents/?chatbot_id=${chatbotId}`);
+                    
                     if (response.ok) {
                         const documents = await response.json();
                         
                         if (documents.length === 0) {
-                            container.innerHTML = '<div class="no-documents">No documents uploaded yet.</div>';
+                            container.innerHTML = `
+                                <div class="no-documents" style="text-align: center; padding: 40px 20px; color: #718096;">
+                                    <h3 style="color: #4a5568; margin-bottom: 16px;">📄 No Documents Yet</h3>
+                                    <p>Upload documents above to give ${chatbotName} knowledge to work with.</p>
+                                </div>
+                            `;
                             return;
                         }
 
@@ -486,7 +717,7 @@ enough information to answer the question, say so clearly. Always be truthful an
                                     </div>
                                 </div>
                                 <div class="document-actions">
-                                    <button class="btn btn-danger" onclick="adminPanel.deleteDocument(${doc.id}, '${doc.filename}')">Delete</button>
+                                    <button class="btn btn-danger" onclick="adminPanel.removeDocumentFromChatbot(${chatbotId}, ${doc.id}, '${doc.filename}')">🗑️ Remove</button>
                                 </div>
                             </div>
                         `).join('');
@@ -494,6 +725,196 @@ enough information to answer the question, say so clearly. Always be truthful an
                 } catch (error) {
                     container.innerHTML = '<div class="error">Error loading documents</div>';
                 }
+            }
+
+            async removeDocumentFromChatbot(chatbotId, documentId, filename) {
+                if (!confirm(`Remove "${filename}" from this chatbot? The document will still exist and can be added to other chatbots.`)) return;
+
+                const messageDiv = document.getElementById('documentMessage');
+
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/${chatbotId}/documents/${documentId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        messageDiv.className = 'success-message';
+                        messageDiv.textContent = `Document "${filename}" removed from chatbot`;
+                        messageDiv.style.display = 'block';
+                        setTimeout(() => messageDiv.style.display = 'none', 3000);
+                        
+                        // Reload documents for current chatbot
+                        await this.loadChatbotDocuments(this.currentChatbotId, this.currentChatbotName);
+                        
+                        // Reload chatbot list to update document counts (if it's visible)
+                        if (document.getElementById('chatbots').style.display !== 'none') {
+                            await this.loadChatbots();
+                        }
+                    } else {
+                        throw new Error('Remove failed');
+                    }
+                } catch (error) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = 'Error removing document from chatbot';
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 3000);
+                }
+            }
+
+            createChatbot() {
+                const name = prompt('Enter chatbot name:');
+                if (!name) return;
+                
+                const description = prompt('Enter chatbot description (optional):') || '';
+                const systemPrompt = prompt('Enter system prompt:');
+                if (!systemPrompt) {
+                    alert('System prompt is required');
+                    return;
+                }
+                
+                this.saveChatbot(null, { name, description, system_prompt: systemPrompt });
+            }
+
+            editChatbot(chatbotId) {
+                const chatbot = this.chatbots.find(cb => cb.id === chatbotId);
+                if (!chatbot) return;
+                
+                const name = prompt('Enter chatbot name:', chatbot.name);
+                if (name === null) return;
+                
+                const description = prompt('Enter chatbot description:', chatbot.description || '') || '';
+                const systemPrompt = prompt('Enter system prompt:', chatbot.system_prompt);
+                if (!systemPrompt) {
+                    alert('System prompt is required');
+                    return;
+                }
+                
+                this.saveChatbot(chatbotId, { name, description, system_prompt: systemPrompt });
+            }
+
+            async saveChatbot(chatbotId, data) {
+                const messageDiv = document.getElementById('chatbotMessage');
+                
+                try {
+                    const url = chatbotId ? `${API_BASE}/chatbots/${chatbotId}` : `${API_BASE}/chatbots/`;
+                    const method = chatbotId ? 'PUT' : 'POST';
+                    
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        messageDiv.className = 'success-message';
+                        messageDiv.textContent = `Chatbot ${chatbotId ? 'updated' : 'created'} successfully!`;
+                        messageDiv.style.display = 'block';
+                        setTimeout(() => messageDiv.style.display = 'none', 3000);
+                        await this.loadChatbots();
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Failed to save chatbot');
+                    }
+                } catch (error) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = `Error saving chatbot: ${error.message}`;
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 5000);
+                }
+            }
+
+            async toggleChatbot(chatbotId, isActive) {
+                const action = isActive ? 'deactivate' : 'activate';
+                const messageDiv = document.getElementById('chatbotMessage');
+                
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/${chatbotId}/${action}`, {
+                        method: 'POST'
+                    });
+
+                    if (response.ok) {
+                        messageDiv.className = 'success-message';
+                        messageDiv.textContent = `Chatbot ${action}d successfully!`;
+                        messageDiv.style.display = 'block';
+                        setTimeout(() => messageDiv.style.display = 'none', 3000);
+                        await this.loadChatbots();
+                    } else {
+                        throw new Error(`Failed to ${action} chatbot`);
+                    }
+                } catch (error) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = `Error ${action}ing chatbot`;
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 3000);
+                }
+            }
+
+            async deleteChatbot(chatbotId, chatbotName) {
+                if (!confirm(`Are you sure you want to delete "${chatbotName}"? This will also delete all associated chat sessions.`)) return;
+
+                const messageDiv = document.getElementById('chatbotMessage');
+
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/${chatbotId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        messageDiv.className = 'success-message';
+                        messageDiv.textContent = `Chatbot "${chatbotName}" deleted successfully`;
+                        messageDiv.style.display = 'block';
+                        setTimeout(() => messageDiv.style.display = 'none', 3000);
+                        await this.loadChatbots();
+                    } else {
+                        throw new Error('Delete failed');
+                    }
+                } catch (error) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = 'Error deleting chatbot';
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 3000);
+                }
+            }
+
+
+            async loadDocuments() {
+                const container = document.getElementById('documentsList');
+                const uploadSection = document.querySelector('.upload-section h2');
+                const docsSection = document.querySelector('.documents-section h2');
+                
+                // Reset current chatbot context
+                this.currentChatbotId = null;
+                this.currentChatbotName = null;
+                
+                // Hide breadcrumb
+                document.getElementById('documentBreadcrumb').style.display = 'none';
+                
+                // Reset section headers
+                uploadSection.textContent = '📄 Upload Documents';
+                docsSection.textContent = 'Document Management';
+                
+                // Show instructions to use chatbot-specific document management
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #718096;">
+                        <h3 style="color: #4a5568; margin-bottom: 16px;">📋 Document Management</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 24px;">
+                            Documents are now managed per chatbot for better isolation and organization.
+                        </p>
+                        <p style="margin-bottom: 24px;">
+                            To upload or manage documents:
+                        </p>
+                        <ol style="text-align: left; display: inline-block; margin-bottom: 24px;">
+                            <li style="margin-bottom: 8px;">Go to the <strong>Chatbots</strong> tab</li>
+                            <li style="margin-bottom: 8px;">Click <strong>"📄 Manage Documents"</strong> on any chatbot</li>
+                            <li style="margin-bottom: 8px;">Upload and manage documents for that specific chatbot</li>
+                        </ol>
+                        <button class="btn btn-primary" onclick="adminPanel.switchTab('chatbots')" style="margin-top: 16px;">
+                            🤖 Go to Chatbots
+                        </button>
+                    </div>
+                `;
             }
 
             async handleFiles(files) {
@@ -507,14 +928,21 @@ enough information to answer the question, say so clearly. Always be truthful an
             }
 
             async uploadFile(file) {
+                // Check if we're in chatbot-specific document management mode
+                if (!this.currentChatbotId) {
+                    alert('Please select a chatbot first by clicking "📄 Manage Documents" on a chatbot.');
+                    return;
+                }
+
                 const formData = new FormData();
                 formData.append('file', file);
+                formData.append('chatbot_id', this.currentChatbotId);
 
                 const uploadProgress = document.getElementById('uploadProgress');
                 const progressText = document.getElementById('progressText');
 
                 uploadProgress.style.display = 'block';
-                progressText.textContent = `Uploading ${file.name}...`;
+                progressText.textContent = `Uploading ${file.name} for ${this.currentChatbotName}...`;
 
                 try {
                     const response = await fetch(`${API_BASE}/documents/upload`, {
@@ -524,20 +952,22 @@ enough information to answer the question, say so clearly. Always be truthful an
 
                     if (response.ok) {
                         const result = await response.json();
-                        progressText.textContent = `✅ ${file.name} uploaded successfully!`;
+                        progressText.textContent = `✅ ${file.name} uploaded successfully to ${result.chatbot_name}!`;
                         setTimeout(() => {
                             uploadProgress.style.display = 'none';
-                            this.loadDocuments();
+                            // Reload documents for current chatbot
+                            this.loadChatbotDocuments(this.currentChatbotId, this.currentChatbotName);
                         }, 2000);
                     } else {
-                        throw new Error('Upload failed');
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Upload failed');
                     }
                 } catch (error) {
-                    progressText.textContent = `❌ Error uploading ${file.name}`;
+                    progressText.textContent = `❌ Error uploading ${file.name}: ${error.message}`;
                     console.error('Upload error:', error);
                     setTimeout(() => {
                         uploadProgress.style.display = 'none';
-                    }, 3000);
+                    }, 5000);
                 }
             }
 
@@ -565,6 +995,120 @@ enough information to answer the question, say so clearly. Always be truthful an
                     messageDiv.textContent = 'Error deleting document';
                     messageDiv.style.display = 'block';
                     setTimeout(() => messageDiv.style.display = 'none', 3000);
+                }
+            }
+
+            showEmbedCode(chatbotId, chatbotName) {
+                const modal = document.getElementById('embedModal');
+                const chatbotNameSpan = document.getElementById('embedChatbotName');
+                
+                // Update modal title
+                chatbotNameSpan.textContent = chatbotName;
+                
+                // Get current host and protocol
+                const currentHost = window.location.host;
+                const currentProtocol = window.location.protocol;
+                const baseUrl = currentProtocol + '//' + currentHost;
+                
+                // Generate embed codes using string concatenation to avoid template literal issues
+                const basicCode = '<!-- Basic Inline Chatbot Widget -->\n' +
+                    '<lt-chatbot data-id="' + chatbotId + '" data-api-base="' + baseUrl + '/api"></lt-chatbot>\n' +
+                    '<script src="' + baseUrl + '/widget/chatbot-widget.js"></' + 'script>';
+
+                const floatingCode = '<!-- Floating Chat Widget -->\n' +
+                    '<lt-chatbot \n' +
+                    '    data-id="' + chatbotId + '"\n' +
+                    '    data-mode="floating"\n' +
+                    '    data-title="' + chatbotName + '"\n' +
+                    '    data-theme="light"\n' +
+                    '    data-api-base="' + baseUrl + '/api">\n' +
+                    '</lt-chatbot>\n' +
+                    '<script src="' + baseUrl + '/widget/chatbot-widget.js"></' + 'script>';
+
+                const customCode = '<!-- Customized Widget -->\n' +
+                    '<lt-chatbot \n' +
+                    '    data-id="' + chatbotId + '"\n' +
+                    '    data-mode="inline"\n' +
+                    '    data-title="' + chatbotName + '"\n' +
+                    '    data-theme="light"\n' +
+                    '    data-height="600px"\n' +
+                    '    data-width="100%"\n' +
+                    '    data-placeholder="Ask me anything..."\n' +
+                    '    data-api-base="' + baseUrl + '/api">\n' +
+                    '</lt-chatbot>\n' +
+                    '<script src="' + baseUrl + '/widget/chatbot-widget.js"></' + 'script>';
+
+                const scriptCode = '<script src="' + baseUrl + '/widget/chatbot-widget.js"></' + 'script>';
+                
+                // Update code blocks
+                document.getElementById('basicEmbedCode').textContent = basicCode;
+                document.getElementById('floatingEmbedCode').textContent = floatingCode;
+                document.getElementById('customEmbedCode').textContent = customCode;
+                document.getElementById('scriptEmbedCode').textContent = scriptCode;
+                
+                // Show modal
+                modal.style.display = 'block';
+            }
+
+            hideEmbedModal() {
+                const modal = document.getElementById('embedModal');
+                modal.style.display = 'none';
+            }
+
+            copyToClipboard(elementId) {
+                const element = document.getElementById(elementId);
+                if (!element) return;
+                
+                const text = element.textContent;
+                
+                // Use modern clipboard API if available
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        this.showCopyFeedback(elementId);
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                        this.fallbackCopyToClipboard(text, elementId);
+                    });
+                } else {
+                    this.fallbackCopyToClipboard(text, elementId);
+                }
+            }
+
+            fallbackCopyToClipboard(text, elementId) {
+                // Fallback for older browsers or non-secure contexts
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    this.showCopyFeedback(elementId);
+                } catch (err) {
+                    console.error('Fallback copy failed', err);
+                }
+                
+                textArea.remove();
+            }
+
+            showCopyFeedback(elementId) {
+                // Find the copy button for this code block
+                const codeBlock = document.getElementById(elementId).parentElement;
+                const copyBtn = codeBlock.querySelector('.copy-btn');
+                
+                if (copyBtn) {
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = '✓ Copied!';
+                    copyBtn.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        copyBtn.textContent = originalText;
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
                 }
             }
         }

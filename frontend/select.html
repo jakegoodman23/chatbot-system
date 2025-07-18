@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Chatbot - iQueue</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="iqueue-stripes.svg">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 iQueue Chatbots</h1>
+            <nav>
+                <a href="select.html" class="nav-link active">Select Chatbot</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+            </nav>
+        </header>
+
+        <div class="chatbot-selection">
+            <div class="selection-header">
+                <h2>Choose a Chatbot</h2>
+                <p>Select an existing chatbot or create a new one to get started.</p>
+            </div>
+
+            <div class="chatbots-grid" id="chatbotsGrid">
+                <!-- Chatbots will be loaded here -->
+            </div>
+
+            <div class="create-section">
+                <button id="createChatbotBtn" class="create-btn">
+                    <span>➕</span>
+                    Create New Chatbot
+                </button>
+            </div>
+        </div>
+
+        <!-- Create Chatbot Modal -->
+        <div id="createModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create New Chatbot</h3>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="createChatbotForm">
+                        <div class="form-group">
+                            <label for="chatbotName">Name *</label>
+                            <input type="text" id="chatbotName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="chatbotDescription">Description</label>
+                            <textarea id="chatbotDescription" name="description" rows="3" placeholder="Optional description of your chatbot..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="systemPrompt">System Prompt *</label>
+                            <textarea id="systemPrompt" name="system_prompt" rows="5" required placeholder="Enter the system prompt that defines your chatbot's personality and behavior..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+                            <button type="submit" class="btn-primary">Create Chatbot</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading chatbots...</p>
+        </div>
+    </div>
+
+    <script src="select.js"></script>
+</body>
+</html>

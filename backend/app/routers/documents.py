@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Form
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..services.embeddings import EmbeddingService
 from ..services.document_processor import DocumentProcessor
+from ..services.chatbot_service import ChatbotService
 from ..models import Document
 import os
 import uuid
@@ -13,13 +14,22 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 # Initialize services
 embedding_service = EmbeddingService()
 document_processor = DocumentProcessor(embedding_service)
+chatbot_service = ChatbotService()
 
 @router.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
+    chatbot_id: int = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Upload and process a document (PDF or TXT)"""
+    """Upload and process a document (PDF or TXT) for a specific chatbot"""
+    # Validate chatbot exists and is active
+    chatbot = chatbot_service.get_chatbot(db, chatbot_id)
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found")
+    if not chatbot.is_active:
+        raise HTTPException(status_code=400, detail="Cannot upload documents to inactive chatbot")
+    
     # Validate file type
     if not file.filename.lower().endswith(('.pdf', '.txt')):
         raise HTTPException(status_code=400, detail="Only PDF and TXT files are supported")
@@ -43,6 +53,9 @@ async def upload_document(
             file_path, file.filename, db
         )
         
+        # Associate document with chatbot
+        chatbot_service.add_document_to_chatbot(db, chatbot_id, document.id)
+        
         # Clean up temporary file
         os.remove(file_path)
         
@@ -50,7 +63,9 @@ async def upload_document(
             "message": "Document uploaded and processed successfully",
             "document_id": document.id,
             "filename": document.filename,
-            "chunks_created": len(document.chunks)
+            "chunks_created": len(document.chunks),
+            "chatbot_id": chatbot_id,
+            "chatbot_name": chatbot.name
         }
     
     except Exception as e:
@@ -60,19 +75,35 @@ async def upload_document(
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
 
 @router.get("/")
-async def list_documents(db: Session = Depends(get_db)):
-    """List all uploaded documents"""
-    documents = db.query(Document).all()
-    return [
-        {
-            "id": doc.id,
-            "filename": doc.filename,
-            "file_type": doc.file_type,
-            "created_at": doc.created_at,
-            "chunks_count": len(doc.chunks)
-        }
-        for doc in documents
-    ]
+async def list_documents(chatbot_id: int = None, db: Session = Depends(get_db)):
+    """List documents - specify chatbot_id for chatbot-specific documents, or leave empty for all documents (deprecated)"""
+    if chatbot_id:
+        # Get documents for specific chatbot
+        documents = chatbot_service.get_chatbot_documents(db, chatbot_id)
+        return [
+            {
+                "id": doc.id,
+                "filename": doc.filename,
+                "file_type": doc.file_type,
+                "created_at": doc.created_at,
+                "chunks_count": len(doc.chunks)
+            }
+            for doc in documents
+        ]
+    else:
+        # Deprecated: List all documents globally
+        documents = db.query(Document).all()
+        return [
+            {
+                "id": doc.id,
+                "filename": doc.filename,
+                "file_type": doc.file_type,
+                "created_at": doc.created_at,
+                "chunks_count": len(doc.chunks),
+                "associated_chatbots": len(doc.chatbots)
+            }
+            for doc in documents
+        ]
 
 @router.get("/{document_id}")
 async def get_document(document_id: int, db: Session = Depends(get_db)):

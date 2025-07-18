@@ -10,11 +10,26 @@
 <body>
     <div class="container">
         <header>
-            <h1>🤖 Ask iQueue</h1>
-            <nav>
-                <a href="index.html" class="nav-link active">Chat</a>
-                <a href="admin.html" class="nav-link">Admin</a>
-            </nav>
+            <div class="header-top">
+                <h1>🤖 Ask iQueue</h1>
+                <nav>
+                    <a href="select.html" class="nav-link">Select Chatbot</a>
+                    <a href="index.html" class="nav-link active">Chat</a>
+                    <a href="admin.html" class="nav-link">Admin</a>
+                </nav>
+            </div>
+            <div class="chatbot-info" id="chatbotInfo" style="display: none;">
+                <div class="chatbot-badge">
+                    <span class="chatbot-icon">🤖</span>
+                    <div class="chatbot-details">
+                        <div class="chatbot-name" id="chatbotName">Loading...</div>
+                        <div class="chatbot-description" id="chatbotDescription">Loading chatbot information...</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="backToSelectBtn" class="btn-secondary small">← Back to Selection</button>
+                </div>
+            </div>
         </header>
 
         <div class="chat-container">

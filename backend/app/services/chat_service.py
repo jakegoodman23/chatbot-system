@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from .embeddings import EmbeddingService
 from .document_processor import DocumentProcessor
 from .admin_service import AdminService
-from ..models import ChatSession, ChatMessage
+from .chatbot_service import ChatbotService
+from ..models import ChatSession, ChatMessage, Chatbot
 import uuid
 import os
 
@@ -12,26 +13,32 @@ class ChatService:
         self.embedding_service = embedding_service
         self.document_processor = document_processor
         self.admin_service = AdminService()
+        self.chatbot_service = ChatbotService()
         self.top_k_results = int(os.getenv("TOP_K_RESULTS", 5))
     
-    def get_or_create_session(self, session_id: str, db: Session) -> ChatSession:
+    def get_or_create_session(self, session_id: str, chatbot_id: int, db: Session) -> ChatSession:
         """Get existing session or create new one"""
         session = db.query(ChatSession).filter(ChatSession.session_id == session_id).first()
         if not session:
-            session = ChatSession(session_id=session_id)
+            session = ChatSession(session_id=session_id, chatbot_id=chatbot_id)
             db.add(session)
             db.commit()
             db.refresh(session)
         return session
     
-    async def generate_response(self, message: str, session_id: str, db: Session) -> Dict[str, Any]:
+    async def generate_response(self, message: str, session_id: str, chatbot_id: int, db: Session) -> Dict[str, Any]:
         """Generate chatbot response using RAG"""
-        # Get or create session
-        session = self.get_or_create_session(session_id, db)
+        # Get chatbot
+        chatbot = self.chatbot_service.get_chatbot(db, chatbot_id)
+        if not chatbot or not chatbot.is_active:
+            raise ValueError(f"Chatbot with id {chatbot_id} not found or inactive")
         
-        # Search for relevant document chunks
-        similar_chunks = await self.document_processor.search_similar_chunks(
-            message, db, self.top_k_results
+        # Get or create session
+        session = self.get_or_create_session(session_id, chatbot_id, db)
+        
+        # Search for relevant document chunks from chatbot's documents only
+        similar_chunks = await self.document_processor.search_similar_chunks_for_chatbot(
+            message, chatbot_id, db, self.top_k_results
         )
         
         # Build context from similar chunks
@@ -43,8 +50,8 @@ class ChatService:
                 context_texts.append(f"From {chunk.document_filename}: {chunk.chunk_text}")
                 context_chunk_ids.append(str(chunk.id))
         
-        # Get configurable system prompt from admin settings and append markdown instructions
-        base_prompt = self.admin_service.get_system_prompt(db)
+        # Use chatbot's system prompt and append markdown instructions
+        base_prompt = chatbot.system_prompt
         markdown_instructions = """
 
 Format your responses using markdown for better readability:

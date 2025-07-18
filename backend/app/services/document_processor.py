@@ -135,3 +135,34 @@ class DocumentProcessor:
             chunks_with_scores.append((chunk, row.similarity_score))
         
         return chunks_with_scores
+    
+    async def search_similar_chunks_for_chatbot(self, query: str, chatbot_id: int, db: Session, top_k: int = 5) -> List[Tuple[DocumentChunk, float]]:
+        """Search for similar document chunks using vector similarity, limited to chatbot's documents"""
+        # Get query embedding
+        query_embedding = await self.embedding_service.get_embedding(query)
+        
+        # Query for similar chunks using cosine similarity, filtered by chatbot's documents
+        results = db.execute(text("""
+            SELECT dc.*, d.filename, 
+                   1 - (dc.embedding <=> :query_embedding) as similarity_score
+            FROM document_chunks dc
+            JOIN documents d ON dc.document_id = d.id
+            JOIN chatbot_documents cd ON d.id = cd.document_id
+            WHERE cd.chatbot_id = :chatbot_id
+            ORDER BY dc.embedding <=> :query_embedding
+            LIMIT :top_k
+        """), {"query_embedding": str(query_embedding), "chatbot_id": chatbot_id, "top_k": top_k}).fetchall()
+        
+        chunks_with_scores = []
+        for row in results:
+            chunk = DocumentChunk(
+                id=row.id,
+                document_id=row.document_id,
+                chunk_text=row.chunk_text,
+                chunk_index=row.chunk_index,
+                embedding=row.embedding
+            )
+            chunk.document_filename = row.filename
+            chunks_with_scores.append((chunk, row.similarity_score))
+        
+        return chunks_with_scores

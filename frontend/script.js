@@ -3,13 +3,29 @@ const API_BASE = '/api';
 class ChatApp {
     constructor() {
         this.sessionId = null;
+        this.chatbot = null;
         this.messageInput = document.getElementById('messageInput');
         this.sendButton = document.getElementById('sendButton');
         this.chatMessages = document.getElementById('chatMessages');
         this.status = document.getElementById('status');
         this.contextInfo = document.getElementById('contextInfo');
         this.sourcesList = document.getElementById('sourcesList');
+        this.chatbotInfo = document.getElementById('chatbotInfo');
+        this.chatbotName = document.getElementById('chatbotName');
+        this.chatbotDescription = document.getElementById('chatbotDescription');
+        this.backToSelectBtn = document.getElementById('backToSelectBtn');
         this.typingIndicator = null; // Reference to typing indicator element
+        
+        // Check if all elements exist
+        if (!this.messageInput || !this.sendButton || !this.chatMessages || !this.status) {
+            console.error('Critical DOM elements not found:', {
+                messageInput: !!this.messageInput,
+                sendButton: !!this.sendButton,
+                chatMessages: !!this.chatMessages,
+                status: !!this.status
+            });
+            return;
+        }
         
         this.init();
     }
@@ -67,7 +83,7 @@ class ChatApp {
 
     async init() {
         await this.checkServerHealth();
-        this.createSession();
+        await this.loadChatbot();
         this.setupEventListeners();
     }
 
@@ -87,10 +103,86 @@ class ChatApp {
         }
     }
 
+    async loadChatbot() {
+        // Check if chatbot is selected from URL or localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatbotId = urlParams.get('chatbot');
+        
+        if (chatbotId) {
+            // Load chatbot from API
+            try {
+                const response = await fetch(`${API_BASE}/chatbots/${chatbotId}`);
+                if (response.ok) {
+                    this.chatbot = await response.json();
+                    localStorage.setItem('selectedChatbot', JSON.stringify(this.chatbot));
+                } else {
+                    throw new Error('Chatbot not found');
+                }
+            } catch (error) {
+                console.error('Error loading chatbot:', error);
+                this.redirectToSelection();
+                return;
+            }
+        } else {
+            // Try to load from localStorage
+            const stored = localStorage.getItem('selectedChatbot');
+            if (stored) {
+                try {
+                    this.chatbot = JSON.parse(stored);
+                } catch (error) {
+                    console.error('Error parsing stored chatbot:', error);
+                    this.redirectToSelection();
+                    return;
+                }
+            } else {
+                this.redirectToSelection();
+                return;
+            }
+        }
+        
+        if (!this.chatbot || !this.chatbot.is_active) {
+            this.redirectToSelection();
+            return;
+        }
+        
+        // Display chatbot info
+        this.displayChatbotInfo();
+        
+        // Create session for this chatbot
+        await this.createSession();
+    }
+    
+    displayChatbotInfo() {
+        this.chatbotName.textContent = this.chatbot.name;
+        this.chatbotDescription.textContent = this.chatbot.description || 'No description';
+        this.chatbotInfo.style.display = 'flex';
+        
+        // Update welcome message
+        const welcomeMsg = this.chatMessages.querySelector('.bot-message .message-content');
+        if (welcomeMsg) {
+            welcomeMsg.innerHTML = `Hello! I'm <strong>${this.chatbot.name}</strong>. ${this.chatbot.description || 'I can help answer questions based on uploaded documents.'} How can I assist you today?`;
+        }
+    }
+    
+    redirectToSelection() {
+        window.location.href = 'select.html';
+    }
+
     async createSession() {
+        if (!this.chatbot) {
+            this.redirectToSelection();
+            return;
+        }
+        
         try {
             const response = await fetch(`${API_BASE}/chat/sessions`, {
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chatbot_id: this.chatbot.id
+                })
             });
             if (response.ok) {
                 const data = await response.json();
@@ -116,11 +208,34 @@ class ChatApp {
         this.messageInput.addEventListener('input', () => {
             this.sendButton.disabled = !this.messageInput.value.trim();
         });
+        
+        this.backToSelectBtn.addEventListener('click', () => {
+            this.redirectToSelection();
+        });
     }
 
     async sendMessage() {
+        console.log('sendMessage called');
         const message = this.messageInput.value.trim();
-        if (!message || !this.sessionId) return;
+        console.log('Message:', message, 'SessionId:', this.sessionId, 'ChatbotId:', this.chatbot?.id);
+        
+        if (!message) {
+            console.log('No message provided');
+            return;
+        }
+        
+        if (!this.sessionId) {
+            console.log('No session ID available');
+            this.status.textContent = 'No session available. Please refresh the page.';
+            return;
+        }
+        
+        if (!this.chatbot) {
+            console.log('No chatbot available');
+            this.status.textContent = 'No chatbot selected. Redirecting...';
+            this.redirectToSelection();
+            return;
+        }
 
         // Disable input while processing
         this.messageInput.disabled = true;
@@ -142,6 +257,7 @@ class ChatApp {
                 },
                 body: JSON.stringify({
                     message: message,
+                    chatbot_id: this.chatbot.id,
                     session_id: this.sessionId
                 })
             });

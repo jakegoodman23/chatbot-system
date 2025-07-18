@@ -17,6 +17,7 @@ chat_service = ChatService(embedding_service, document_processor)
 
 class ChatRequest(BaseModel):
     message: str
+    chatbot_id: int
     session_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
@@ -39,7 +40,7 @@ async def chat(
     
     try:
         result = await chat_service.generate_response(
-            request.message, session_id, db
+            request.message, session_id, request.chatbot_id, db
         )
         return ChatResponse(**result)
     
@@ -64,14 +65,18 @@ async def get_chat_history(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving chat history: {str(e)}")
 
+class SessionRequest(BaseModel):
+    chatbot_id: int
+
 @router.post("/sessions")
-async def create_session(db: Session = Depends(get_db)):
+async def create_session(request: SessionRequest, db: Session = Depends(get_db)):
     """Create a new chat session"""
     session_id = str(uuid.uuid4())
-    session = chat_service.get_or_create_session(session_id, db)
+    session = chat_service.get_or_create_session(session_id, request.chatbot_id, db)
     
     return {
         "session_id": session.session_id,
+        "chatbot_id": session.chatbot_id,
         "created_at": session.created_at
     }
 
