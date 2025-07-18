@@ -25,7 +25,7 @@
             font-weight: 500;
         }
         .admin-tab.active {
-            background: #667eea;
+            background: #739CFC;
             color: white;
         }
         .admin-section {
@@ -51,7 +51,7 @@
             outline: none;
         }
         .prompt-editor:focus {
-            border-color: #667eea;
+            border-color: #739CFC;
         }
         .stats-grid {
             display: grid;
@@ -60,7 +60,7 @@
             margin-bottom: 30px;
         }
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #739CFC 0%, #5B8EFC 100%);
             color: white;
             padding: 20px;
             border-radius: 10px;
@@ -87,7 +87,7 @@
             transition: all 0.3s ease;
         }
         .document-card:hover {
-            border-color: #667eea;
+            border-color: #739CFC;
             transform: translateY(-1px);
         }
         .document-header {
@@ -120,11 +120,11 @@
             display: inline-block;
         }
         .btn-primary {
-            background: #667eea;
+            background: #739CFC;
             color: white;
         }
         .btn-primary:hover {
-            background: #5a67d8;
+            background: #5B8EFC;
         }
         .btn-danger {
             background: #f56565;
@@ -173,7 +173,7 @@
         }
         .form-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #739CFC;
         }
         .upload-container {
             display: grid;
@@ -197,7 +197,7 @@
         }
         .upload-area:hover,
         .upload-area.drag-over {
-            border-color: #667eea;
+            border-color: #739CFC;
             background: #edf2f7;
         }
         .upload-icon {
@@ -225,7 +225,7 @@
         }
         .progress-fill {
             height: 100%;
-            background: #667eea;
+            background: #739CFC;
             transition: width 0.3s ease;
             animation: pulse 2s infinite;
         }
@@ -247,7 +247,7 @@
             transition: all 0.3s ease;
         }
         .document-item:hover {
-            border-color: #667eea;
+            border-color: #739CFC;
             transform: translateY(-1px);
         }
         .document-info {
@@ -304,7 +304,7 @@
             position: absolute;
             top: 8px;
             right: 8px;
-            background: #667eea;
+            background: #739CFC;
             color: white;
             border: none;
             border-radius: 4px;
@@ -315,7 +315,7 @@
         }
 
         .copy-btn:hover {
-            background: #5a67d8;
+            background: #5B8EFC;
             transform: translateY(-1px);
         }
 
@@ -368,7 +368,7 @@
 
             <!-- Chatbot Document Management Section (Hidden by default) -->
             <div class="admin-section" id="chatbot-documents" style="display: none;">
-                <div style="margin-bottom: 20px; padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 4px solid #667eea;">
+                <div style="margin-bottom: 20px; padding: 15px; background: rgba(115, 156, 252, 0.1); border-radius: 8px; border-left: 4px solid #739CFC;">
                     <span style="color: #4a5568;">📍 Managing documents for: <strong id="docManagementChatbotName"></strong></span>
                     <button class="btn btn-secondary small" onclick="adminPanel.exitDocumentManagement()" style="margin-left: 12px;">← Back to Chatbots</button>
                 </div>
@@ -403,7 +403,7 @@
 
             <!-- Documents & Upload Section (Keep for backward compatibility, but hide) -->
             <div class="admin-section" id="documents" style="display: none !important;">
-                <div id="documentBreadcrumb" style="display: none; margin-bottom: 20px; padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border-left: 4px solid #667eea;">
+                <div id="documentBreadcrumb" style="display: none; margin-bottom: 20px; padding: 10px; background: rgba(115, 156, 252, 0.1); border-radius: 8px; border-left: 4px solid #739CFC;">
                     <span style="color: #4a5568;">📍 Managing documents for: <strong id="breadcrumbChatbotName"></strong></span>
                     <button class="btn btn-secondary small" onclick="adminPanel.switchTab('chatbots')" style="margin-left: 12px;">← Back to Chatbots</button>
                 </div>

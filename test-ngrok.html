@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ngrok Chatbot Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #739CFC;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5B8EFC;
+        }
+        #results {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            min-height: 100px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ngrok Chatbot Widget Test</h1>
+    
+    <div class="container">
+        <h2>Test API Connection</h2>
+        <p>Update the ngrok URL below and test the connection:</p>
+        <input type="text" id="ngrokUrl" placeholder="https://your-ngrok-url.ngrok-free.app" style="width: 300px; padding: 8px;">
+        <button onclick="testConnection()">Test API</button>
+        <div id="results"></div>
+    </div>
+
+    <div class="container">
+        <h2>Chatbot Widget</h2>
+        <p>Click to load the chatbot widget with ngrok URL:</p>
+        <button onclick="loadChatbot()">Load Chatbot</button>
+        <div id="chatbot-container"></div>
+    </div>
+
+    <script>
+        let currentNgrokUrl = '';
+
+        async function testConnection() {
+            const ngrokUrl = document.getElementById('ngrokUrl').value.trim();
+            if (!ngrokUrl) {
+                alert('Please enter your ngrok URL');
+                return;
+            }
+            
+            currentNgrokUrl = ngrokUrl;
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Testing connection...';
+
+            try {
+                // Test the API health endpoint
+                const response = await fetch(`${ngrokUrl}/api/health`, {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                resultsDiv.innerHTML = `
+                    <strong>✅ Connection successful!</strong><br>
+                    Status: ${data.status}<br>
+                    Service: ${data.service}<br>
+                    <em>You can now load the chatbot widget.</em>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <strong>❌ Connection failed:</strong><br>
+                    ${error.message}<br>
+                    <em>Make sure your ngrok tunnel is running and the URL is correct.</em>
+                `;
+            }
+        }
+
+        function loadChatbot() {
+            if (!currentNgrokUrl) {
+                alert('Please test the API connection first');
+                return;
+            }
+
+            const container = document.getElementById('chatbot-container');
+            
+            // Clear any existing chatbot
+            container.innerHTML = '';
+
+            // Create the chatbot element
+            const chatbot = document.createElement('lt-chatbot');
+            chatbot.setAttribute('data-id', '1');
+            chatbot.setAttribute('data-mode', 'inline');
+            chatbot.setAttribute('data-title', 'iQueue Bot');
+            chatbot.setAttribute('data-theme', 'light');
+            chatbot.setAttribute('data-api-base', `${currentNgrokUrl}/api`);
+
+            container.appendChild(chatbot);
+
+            // Load the widget script if not already present
+            if (!document.querySelector('script[src*="chatbot-widget.js"]')) {
+                const script = document.createElement('script');
+                script.src = `${currentNgrokUrl}/widget/chatbot-widget.js`;
+                script.onload = () => {
+                    console.log('Chatbot widget loaded successfully');
+                };
+                script.onerror = () => {
+                    container.innerHTML = '<p style="color: red;">Failed to load chatbot widget script</p>';
+                };
+                document.head.appendChild(script);
+            }
+        }
+    </script>
+</body>
+</html> 

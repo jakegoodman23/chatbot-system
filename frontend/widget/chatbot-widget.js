@@ -82,6 +82,13 @@ class LTChatbot extends HTMLElement {
         // Check for session ID in URL parameters
         this.checkUrlParameters();
     }
+
+    getRequestHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+        };
+    }
     
     checkUrlParameters() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -112,8 +119,8 @@ class LTChatbot extends HTMLElement {
             :host {
                 display: block;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                --primary-color: #667eea;
-                --secondary-color: #764ba2;
+                --primary-color: #1e3a8a;
+                --secondary-color: #1d4ed8;
                 --background-color: ${this.theme === 'dark' ? '#1a1a1a' : '#ffffff'};
                 --text-color: ${this.theme === 'dark' ? '#ffffff' : '#333333'};
                 --border-color: ${this.theme === 'dark' ? '#333333' : '#e2e8f0'};
@@ -273,7 +280,7 @@ class LTChatbot extends HTMLElement {
 
             .send-button:hover:not(:disabled) {
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
             }
 
             .send-button:disabled {
@@ -490,7 +497,9 @@ class LTChatbot extends HTMLElement {
 
         try {
             // Load chatbot details
-            const response = await fetch(`${this.apiBase}/chatbots/${this.chatbotId}`);
+            const response = await fetch(`${this.apiBase}/chatbots/${this.chatbotId}`, {
+                headers: this.getRequestHeaders()
+            });
             if (!response.ok) {
                 throw new Error(`Chatbot not found: ${response.statusText}`);
             }
@@ -534,7 +543,9 @@ class LTChatbot extends HTMLElement {
     async restoreOrCreateSession() {
         try {
             // Try to restore the session
-            const response = await fetch(`${this.apiBase}/chat/sessions/${this.urlSessionId}/info`);
+            const response = await fetch(`${this.apiBase}/chat/sessions/${this.urlSessionId}/info`, {
+                headers: this.getRequestHeaders()
+            });
             
             if (response.ok) {
                 const sessionInfo = await response.json();
@@ -566,9 +577,7 @@ class LTChatbot extends HTMLElement {
     async createNewSession() {
         const sessionResponse = await fetch(`${this.apiBase}/chat/sessions`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: this.getRequestHeaders(),
             body: JSON.stringify({
                 chatbot_id: this.chatbot.id
             })
@@ -589,7 +598,9 @@ class LTChatbot extends HTMLElement {
     
     async loadChatHistory() {
         try {
-            const response = await fetch(`${this.apiBase}/chat/sessions/${this.sessionId}/history?limit=50`);
+            const response = await fetch(`${this.apiBase}/chat/sessions/${this.sessionId}/history?limit=50`, {
+                headers: this.getRequestHeaders()
+            });
             
             if (response.ok) {
                 const data = await response.json();
@@ -649,9 +660,7 @@ class LTChatbot extends HTMLElement {
         try {
             const response = await fetch(`${this.apiBase}/chat/`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: this.getRequestHeaders(),
                 body: JSON.stringify({
                     message: message,
                     chatbot_id: this.chatbot.id,
