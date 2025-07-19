@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  slack-bot:
+    build: .
+    container_name: slack-chatbot
+    restart: unless-stopped
+    environment:
+      # Slack Configuration
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+      
+      # Backend Configuration
+      - CHATBOT_BACKEND_URL=http://backend:8000
+      - DEFAULT_CHATBOT_ID=${DEFAULT_CHATBOT_ID:-1}
+      
+      # Bot Configuration
+      - BOT_NAME=${BOT_NAME:-ChatBot Assistant}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      
+      # Optional: Channel Mapping
+      - CHANNEL_CHATBOT_MAPPING=${CHANNEL_CHATBOT_MAPPING:-}
+    
+    networks:
+      - chatbot-network
+    
+    depends_on:
+      - backend
+    
+    # Mount logs directory for debugging
+    volumes:
+      - ./logs:/app/logs
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Reference to your existing backend service
+  # This assumes your backend is also containerized
+  # Adjust accordingly if your backend runs differently
+  backend:
+    # This should point to your existing backend image
+    # Replace with your actual backend image/build context
+    build: ../backend
+    container_name: chatbot-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - chatbot-network
+    depends_on:
+      - postgres
+      
+  # Reference to your existing database
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: chatbot-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-chatbot_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - chatbot-network
+    ports:
+      - "5432:5432"
+
+networks:
+  chatbot-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
