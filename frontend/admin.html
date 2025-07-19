@@ -401,6 +401,37 @@
                 </div>
             </div>
 
+            <!-- Chatbot Suggested Questions Management Section (Hidden by default) -->
+            <div class="admin-section" id="suggested-questions" style="display: none;">
+                <div style="margin-bottom: 20px; padding: 15px; background: rgba(115, 156, 252, 0.1); border-radius: 8px; border-left: 4px solid #739CFC;">
+                    <span style="color: #4a5568;">💬 Managing suggested questions for: <strong id="questionsManagementChatbotName"></strong></span>
+                    <button class="btn btn-secondary small" onclick="adminPanel.exitQuestionsManagement()" style="margin-left: 12px;">← Back to Chatbots</button>
+                </div>
+                
+                <div class="questions-container">
+                    <div class="questions-add-section">
+                        <h2>💬 Add Suggested Question</h2>
+                        <div class="add-question-form">
+                            <div class="form-group">
+                                <label for="questionText">Question Text:</label>
+                                <textarea id="questionText" placeholder="Enter a suggested question users might ask..." rows="3" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; resize: vertical;"></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" onclick="adminPanel.addSuggestedQuestion()">+ Add Question</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="questions-list-section">
+                        <h2>Current Suggested Questions</h2>
+                        <div id="questionsMessage" style="display: none;"></div>
+                        <div class="questions-list" id="questionsList">
+                            <div class="loading">Loading questions...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Documents & Upload Section (Keep for backward compatibility, but hide) -->
             <div class="admin-section" id="documents" style="display: none !important;">
                 <div id="documentBreadcrumb" style="display: none; margin-bottom: 20px; padding: 10px; background: rgba(115, 156, 252, 0.1); border-radius: 8px; border-left: 4px solid #739CFC;">
@@ -629,6 +660,7 @@
                                     <button class="btn btn-primary" onclick="adminPanel.manageChatbotDocuments(${chatbot.id}, '${chatbot.name}')">📄 Manage Documents</button>
                                     <button class="btn btn-primary" onclick="adminPanel.showEmbedCode(${chatbot.id}, '${chatbot.name}')">🔗 Embed Code</button>
                                     <button class="btn btn-primary" onclick="adminPanel.editChatbot(${chatbot.id})">✏️ Edit</button>
+                                    <button class="btn btn-primary" onclick="adminPanel.manageSuggestedQuestions(${chatbot.id}, '${chatbot.name}')">💬 Suggested Questions</button>
                                     <button class="btn ${chatbot.is_active ? 'btn-secondary' : 'btn-primary'}" 
                                             onclick="adminPanel.toggleChatbot(${chatbot.id}, ${chatbot.is_active})">
                                         ${chatbot.is_active ? '⏸️ Deactivate' : '▶️ Activate'}
@@ -925,6 +957,242 @@
                         </button>
                     </div>
                 `;
+            }
+
+            // Suggested Questions Management
+            manageSuggestedQuestions(chatbotId, chatbotName) {
+                // Store current chatbot for questions management
+                this.currentChatbotId = chatbotId;
+                this.currentChatbotName = chatbotName;
+                
+                // Hide chatbots section and show questions management section
+                document.getElementById('chatbots').style.display = 'none';
+                document.getElementById('suggested-questions').style.display = 'block';
+                
+                // Update the section title
+                document.getElementById('questionsManagementChatbotName').textContent = chatbotName;
+                
+                // Load questions for this chatbot
+                this.loadSuggestedQuestions(chatbotId);
+            }
+
+            exitQuestionsManagement() {
+                // Clear current chatbot context
+                this.currentChatbotId = null;
+                this.currentChatbotName = null;
+                
+                // Show chatbots section and hide questions management section
+                document.getElementById('suggested-questions').style.display = 'none';
+                document.getElementById('chatbots').style.display = 'block';
+                
+                // Clear the question input
+                document.getElementById('questionText').value = '';
+            }
+
+            async loadSuggestedQuestions(chatbotId) {
+                const container = document.getElementById('questionsList');
+                
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/${chatbotId}/suggested-questions`);
+                    
+                    if (response.ok) {
+                        const questions = await response.json();
+                        
+                        if (questions.length === 0) {
+                            container.innerHTML = `
+                                <div class="no-documents" style="text-align: center; padding: 40px 20px; color: #718096;">
+                                    <h3 style="color: #4a5568; margin-bottom: 16px;">💬 No Suggested Questions Yet</h3>
+                                    <p>Add questions above to help users get started with this chatbot.</p>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        container.innerHTML = questions.map((question, index) => `
+                            <div class="document-item question-item">
+                                <div class="document-info">
+                                    <div class="document-name">
+                                        ${question.question_text}
+                                    </div>
+                                    <div class="document-meta">
+                                        Order: ${question.display_order} • Created: ${new Date(question.created_at).toLocaleDateString()}
+                                    </div>
+                                </div>
+                                <div class="document-actions">
+                                    ${index > 0 ? `<button class="btn btn-secondary small" onclick="adminPanel.moveQuestion(${question.id}, 'up')">↑ Move Up</button>` : ''}
+                                    ${index < questions.length - 1 ? `<button class="btn btn-secondary small" onclick="adminPanel.moveQuestion(${question.id}, 'down')">↓ Move Down</button>` : ''}
+                                    <button class="btn btn-primary small" onclick="adminPanel.editQuestion(${question.id}, '${question.question_text.replace(/'/g, "\\'")}')">✏️ Edit</button>
+                                    <button class="btn btn-danger small" onclick="adminPanel.deleteQuestion(${question.id}, '${question.question_text.replace(/'/g, "\\'")}')">🗑️ Delete</button>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        throw new Error('Failed to load questions');
+                    }
+                } catch (error) {
+                    container.innerHTML = '<div class="error">Error loading suggested questions</div>';
+                }
+            }
+
+            async addSuggestedQuestion() {
+                const questionText = document.getElementById('questionText').value.trim();
+                
+                if (!questionText) {
+                    alert('Please enter a question text');
+                    return;
+                }
+
+                if (!this.currentChatbotId) {
+                    alert('No chatbot selected');
+                    return;
+                }
+
+                const messageDiv = document.getElementById('questionsMessage');
+
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/${this.currentChatbotId}/suggested-questions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            question_text: questionText
+                        })
+                    });
+
+                    if (response.ok) {
+                        messageDiv.className = 'success-message';
+                        messageDiv.textContent = 'Suggested question added successfully!';
+                        messageDiv.style.display = 'block';
+                        setTimeout(() => messageDiv.style.display = 'none', 3000);
+                        
+                        // Clear input and reload questions
+                        document.getElementById('questionText').value = '';
+                        await this.loadSuggestedQuestions(this.currentChatbotId);
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Failed to add question');
+                    }
+                } catch (error) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = `Error adding question: ${error.message}`;
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 5000);
+                }
+            }
+
+            async editQuestion(questionId, currentText) {
+                const newText = prompt('Edit question:', currentText);
+                if (newText === null || newText.trim() === '') return;
+
+                const messageDiv = document.getElementById('questionsMessage');
+
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/${this.currentChatbotId}/suggested-questions/${questionId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            question_text: newText.trim()
+                        })
+                    });
+
+                    if (response.ok) {
+                        messageDiv.className = 'success-message';
+                        messageDiv.textContent = 'Question updated successfully!';
+                        messageDiv.style.display = 'block';
+                        setTimeout(() => messageDiv.style.display = 'none', 3000);
+                        
+                        await this.loadSuggestedQuestions(this.currentChatbotId);
+                    } else {
+                        throw new Error('Failed to update question');
+                    }
+                } catch (error) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = 'Error updating question';
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 3000);
+                }
+            }
+
+            async deleteQuestion(questionId, questionText) {
+                if (!confirm(`Delete this suggested question?\n\n"${questionText}"`)) return;
+
+                const messageDiv = document.getElementById('questionsMessage');
+
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/${this.currentChatbotId}/suggested-questions/${questionId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        messageDiv.className = 'success-message';
+                        messageDiv.textContent = 'Question deleted successfully';
+                        messageDiv.style.display = 'block';
+                        setTimeout(() => messageDiv.style.display = 'none', 3000);
+                        
+                        await this.loadSuggestedQuestions(this.currentChatbotId);
+                    } else {
+                        throw new Error('Delete failed');
+                    }
+                } catch (error) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = 'Error deleting question';
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 3000);
+                }
+            }
+
+            async moveQuestion(questionId, direction) {
+                // Get current questions to determine new order
+                const container = document.getElementById('questionsList');
+                const questionItems = container.querySelectorAll('.question-item');
+                let currentIndex = -1;
+                
+                // Find current question index
+                questionItems.forEach((item, index) => {
+                    const editBtn = item.querySelector('.btn-primary');
+                    if (editBtn && editBtn.onclick.toString().includes(questionId)) {
+                        currentIndex = index;
+                    }
+                });
+                
+                if (currentIndex === -1) return;
+                
+                let newOrder;
+                if (direction === 'up' && currentIndex > 0) {
+                    newOrder = currentIndex; // Move up means lower display_order number
+                } else if (direction === 'down' && currentIndex < questionItems.length - 1) {
+                    newOrder = currentIndex + 2; // Move down means higher display_order number
+                } else {
+                    return; // Can't move
+                }
+
+                const messageDiv = document.getElementById('questionsMessage');
+
+                try {
+                    const response = await fetch(`${API_BASE}/chatbots/${this.currentChatbotId}/suggested-questions/${questionId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            display_order: newOrder
+                        })
+                    });
+
+                    if (response.ok) {
+                        await this.loadSuggestedQuestions(this.currentChatbotId);
+                    } else {
+                        throw new Error('Failed to reorder question');
+                    }
+                } catch (error) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = 'Error reordering question';
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 3000);
+                }
             }
 
             async handleFiles(files) {

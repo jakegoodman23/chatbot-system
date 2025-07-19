@@ -28,12 +28,15 @@ run_migrations() {
         echo "- 001_add_chatbots.sql"
         echo "- 002_migrate_to_chatbots.sql" 
         echo "- 003_add_message_feedback.sql (NEW - for thumbs up/down feature)"
+        echo "- 004_add_suggested_questions.sql (NEW - for suggested questions feature)"
         echo ""
         echo "New features added:"
         echo "✅ Thumbs up/down feedback on chat messages"
         echo "✅ Feedback statistics API endpoints"
         echo "✅ Frontend UI for message feedback"
         echo "✅ Widget support for feedback buttons"
+        echo "✅ Pre-loaded suggested questions for users"
+        echo "✅ Admin interface for managing suggested questions"
     fi
 }
 
@@ -92,6 +95,11 @@ case "${1:-}" in
         echo "This update adds thumbs up/down feedback capability to chat messages."
         echo "Users can now rate bot responses, and admins can view feedback statistics."
         echo ""
-        echo "To apply the new feature, run: $0 migrate"
+        echo "🆕 New Suggested Questions Feature:"
+        echo "Admins can now pre-load suggested questions that appear as quick-start"
+        echo "buttons for users. This helps users get started and shows what the"
+        echo "chatbot can help with."
+        echo ""
+        echo "To apply the new features, run: $0 migrate"
         ;;
 esac

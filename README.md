@@ -9,6 +9,7 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 - 🔍 **RAG-powered responses** using OpenAI embeddings and completions with vector similarity search
 - 💬 **Modern chat interface** with markdown support, typing indicators, and session management
 - 👍 **Message feedback system** - Users can give thumbs up/down feedback on bot responses
+- 💬 **Suggested questions** - Pre-loaded questions help users get started quickly
 - ⚙️ **Comprehensive admin panel** with chatbot creation, document management, and analytics
 - 🔗 **Embeddable widgets** - Generate embed codes to add chatbots to any website
 - 🐳 **Docker containerization** for easy deployment and development
@@ -55,7 +56,7 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 
 5. **Access the application**:
    - **Chatbot Selection**: http://localhost:3000/select.html
-   - **Chat Interface**: http://localhost:3000/index.html (redirects to selection if no chatbot chosen)
+   - **Chat Interface**: http://localhost:3000/index.html
    - **Admin Panel**: http://localhost:3000/admin.html
    - **Backend API**: http://localhost:8000
    - **API Documentation**: http://localhost:8000/docs
@@ -72,13 +73,17 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 3. **Upload Documents**: Click "📄 Manage Documents" on your chatbot
    - Upload PDF or TXT files relevant to this chatbot's purpose
    - Documents are processed and embedded automatically
+4. **Add Suggested Questions**: Click "💬 Suggested Questions"
+   - Add helpful starter questions for users
+   - Questions appear as clickable buttons in the chat interface
 
 ### Chatting with Your Bots
 
 1. **Select Chatbot**: Go to http://localhost:3000/select.html
 2. **Choose a chatbot** from the available options
-3. **Start chatting**: Ask questions related to the uploaded documents
-4. **Switch chatbots**: Use "← Back to Selection" to try different bots
+3. **Start chatting**: Click suggested questions or type your own
+4. **Provide feedback**: Use 👍/👎 buttons to rate responses
+5. **Switch chatbots**: Use "← Back to Selection" to try different bots
 
 ### Embedding Chatbots
 
@@ -107,7 +112,7 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
    ```bash
    cd backend
    pip install -r requirements.txt
-   python run_migrations.py  # Run database migrations
+   python run_migrations.py
    uvicorn app.main:app --reload --port 8000
    ```
 
@@ -115,7 +120,6 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
    ```bash
    cd frontend
    python -m http.server 3000
-   # Or use any static file server
    ```
 
 ### API Endpoints
@@ -130,4 +134,62 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 - `POST /chatbots/{id}/deactivate` - Deactivate chatbot
 - `GET /chatbots/{id}/documents` - Get chatbot's documents
 - `POST /chatbots/{id}/documents` - Add document to chatbot
-- `
+- `DELETE /chatbots/{id}/documents/{doc_id}` - Remove document from chatbot
+
+**Chat & Sessions:**
+- `POST /chat/` - Send message to chatbot
+- `POST /chat/feedback` - Submit thumbs up/down feedback for a message
+- `GET /chat/feedback/stats/{chatbot_id}` - Get feedback statistics for a chatbot
+- `POST /chat/sessions` - Create new chat session
+- `GET /chat/sessions/{session_id}/history` - Get chat history
+
+**Suggested Questions:**
+- `GET /chatbots/{chatbot_id}/suggested-questions` - Get suggested questions for a chatbot
+- `POST /chatbots/{chatbot_id}/suggested-questions` - Create a new suggested question
+- `PUT /chatbots/{chatbot_id}/suggested-questions/{question_id}` - Update a suggested question
+- `DELETE /chatbots/{chatbot_id}/suggested-questions/{question_id}` - Delete a suggested question
+
+**Document Management:**
+- `POST /documents/upload` - Upload document to specific chatbot
+- `GET /documents/?chatbot_id={id}` - List documents for chatbot
+- `GET /documents/{id}` - Get document details
+- `DELETE /documents/{id}` - Delete document
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_API_KEY` | Your OpenAI API key | Required |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:password@localhost:5432/chatbot_db` |
+| `POSTGRES_USER` | PostgreSQL username | `postgres` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `password` |
+| `POSTGRES_DB` | PostgreSQL database name | `chatbot_db` |
+| `CHUNK_SIZE` | Text chunk size for embeddings | `1000` |
+| `CHUNK_OVERLAP` | Overlap between chunks | `200` |
+| `TOP_K_RESULTS` | Number of similar chunks to retrieve | `5` |
+
+## Key Features Explained
+
+### Multi-Chatbot Architecture
+- **Isolated Knowledge**: Each chatbot has its own document collection
+- **Custom Personalities**: Individual system prompts define behavior
+- **Independent Settings**: Per-chatbot configuration and activation status
+- **Scalable Design**: Create unlimited specialized chatbots
+
+### Document Processing
+- **Smart Chunking**: Intelligent text splitting with configurable overlap
+- **Vector Embeddings**: Documents converted to searchable vectors
+- **Similarity Search**: Retrieves most relevant chunks for context
+- **File Support**: PDF and TXT files with content extraction
+
+### User Experience
+- **Chatbot Selection**: Intuitive interface to choose between chatbots
+- **Suggested Questions**: Pre-loaded questions help users get started quickly
+- **Markdown Support**: Rich text formatting in responses
+- **Message Feedback**: Thumbs up/down feedback on bot responses for quality tracking
+- **Responsive Design**: Works on desktop and mobile devices
+- **Session Management**: Persistent chat history per session
+
+## License
+
+MIT License - see LICENSE file for details.

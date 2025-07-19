@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form, File, UploadFile
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..services.chatbot_service import ChatbotService
+from ..models import Chatbot, SuggestedQuestion
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import List, Optional, Dict, Any
+from datetime import datetime
 
 router = APIRouter(prefix="/chatbots", tags=["chatbots"])
 
@@ -14,7 +16,7 @@ class ChatbotCreate(BaseModel):
     name: str
     description: Optional[str] = None
     system_prompt: str
-    settings: Optional[Dict[str, Any]] = None
+    settings: Optional[Dict[str, Any]] = {}
 
 class ChatbotUpdate(BaseModel):
     name: Optional[str] = None
@@ -30,8 +32,8 @@ class ChatbotResponse(BaseModel):
     system_prompt: str
     settings: Dict[str, Any]
     is_active: bool
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
 class ChatbotStats(BaseModel):
     id: int
@@ -46,6 +48,24 @@ class ChatbotStats(BaseModel):
 
 class DocumentAssociation(BaseModel):
     document_id: int
+
+class SuggestedQuestionCreate(BaseModel):
+    question_text: str
+    display_order: Optional[int] = 0
+
+class SuggestedQuestionUpdate(BaseModel):
+    question_text: Optional[str] = None
+    display_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class SuggestedQuestionResponse(BaseModel):
+    id: int
+    chatbot_id: int
+    question_text: str
+    display_order: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
 
 @router.get("/", response_model=List[ChatbotResponse])
 async def get_chatbots(
@@ -362,3 +382,93 @@ async def deactivate_chatbot(
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "chatbots"}
+
+@router.get("/{chatbot_id}/suggested-questions", response_model=List[SuggestedQuestionResponse])
+async def get_suggested_questions(chatbot_id: int, db: Session = Depends(get_db)):
+    """Get all suggested questions for a chatbot"""
+    chatbot = chatbot_service.get_chatbot(db, chatbot_id)
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found")
+    
+    questions = db.query(SuggestedQuestion).filter(
+        SuggestedQuestion.chatbot_id == chatbot_id,
+        SuggestedQuestion.is_active == True
+    ).order_by(SuggestedQuestion.display_order).all()
+    
+    return questions
+
+@router.post("/{chatbot_id}/suggested-questions", response_model=SuggestedQuestionResponse)
+async def create_suggested_question(
+    chatbot_id: int, 
+    question: SuggestedQuestionCreate, 
+    db: Session = Depends(get_db)
+):
+    """Create a new suggested question for a chatbot"""
+    chatbot = chatbot_service.get_chatbot(db, chatbot_id)
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found")
+    
+    # If no display_order provided, set it to the next available order
+    if question.display_order == 0:
+        max_order = db.query(SuggestedQuestion).filter(
+            SuggestedQuestion.chatbot_id == chatbot_id
+        ).count()
+        question.display_order = max_order + 1
+    
+    new_question = SuggestedQuestion(
+        chatbot_id=chatbot_id,
+        question_text=question.question_text,
+        display_order=question.display_order
+    )
+    
+    db.add(new_question)
+    db.commit()
+    db.refresh(new_question)
+    
+    return new_question
+
+@router.put("/{chatbot_id}/suggested-questions/{question_id}", response_model=SuggestedQuestionResponse)
+async def update_suggested_question(
+    chatbot_id: int,
+    question_id: int,
+    question_update: SuggestedQuestionUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update a suggested question"""
+    question = db.query(SuggestedQuestion).filter(
+        SuggestedQuestion.id == question_id,
+        SuggestedQuestion.chatbot_id == chatbot_id
+    ).first()
+    
+    if not question:
+        raise HTTPException(status_code=404, detail="Suggested question not found")
+    
+    update_data = question_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(question, field, value)
+    
+    question.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(question)
+    
+    return question
+
+@router.delete("/{chatbot_id}/suggested-questions/{question_id}")
+async def delete_suggested_question(
+    chatbot_id: int,
+    question_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete a suggested question"""
+    question = db.query(SuggestedQuestion).filter(
+        SuggestedQuestion.id == question_id,
+        SuggestedQuestion.chatbot_id == chatbot_id
+    ).first()
+    
+    if not question:
+        raise HTTPException(status_code=404, detail="Suggested question not found")
+    
+    db.delete(question)
+    db.commit()
+    
+    return {"message": "Suggested question deleted successfully"}

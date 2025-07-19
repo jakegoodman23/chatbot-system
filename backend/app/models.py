@@ -32,6 +32,8 @@ class Chatbot(Base):
     documents = relationship("Document", secondary=chatbot_documents, back_populates="chatbots")
     # One-to-many relationship with chat sessions
     chat_sessions = relationship("ChatSession", back_populates="chatbot", cascade="all, delete-orphan")
+    # One-to-many relationship with suggested questions
+    suggested_questions = relationship("SuggestedQuestion", back_populates="chatbot", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -93,6 +95,19 @@ class MessageFeedback(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     message = relationship("ChatMessage", back_populates="feedback")
+
+class SuggestedQuestion(Base):
+    __tablename__ = "suggested_questions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    chatbot_id = Column(Integer, ForeignKey("chatbots.id", ondelete="CASCADE"), nullable=False)
+    question_text = Column(Text, nullable=False)
+    display_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    chatbot = relationship("Chatbot", back_populates="suggested_questions")
 
 class AdminSettings(Base):
     __tablename__ = "admin_settings"

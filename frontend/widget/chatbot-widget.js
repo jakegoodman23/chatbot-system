@@ -290,6 +290,54 @@ class LTChatbot extends HTMLElement {
                 justify-content: flex-start;
             }
 
+            /* Suggested questions styling */
+            .suggested-questions {
+                margin: 15px 0;
+                padding: 15px;
+                border-radius: 8px;
+                background: linear-gradient(135deg, var(--message-bg) 0%, #f7fafc 100%);
+                border: 1px solid var(--border-color);
+            }
+
+            .suggested-questions-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-color);
+                margin-bottom: 12px;
+                text-align: center;
+            }
+
+            .suggested-questions-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .suggested-question-btn {
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                padding: 10px 12px;
+                text-align: left;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-size: 13px;
+                color: var(--text-color);
+                line-height: 1.3;
+            }
+
+            .suggested-question-btn:hover {
+                border-color: var(--primary-color);
+                background: var(--message-bg);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .suggested-question-btn:active {
+                transform: translateY(0);
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            }
+
             .chat-input-container {
                 padding: 16px;
                 border-top: 1px solid var(--border-color);
@@ -584,6 +632,9 @@ class LTChatbot extends HTMLElement {
                 this.config.welcomeMessage = `Hello! I'm ${this.chatbot.name}. ${this.chatbot.description || 'How can I help you today?'}`;
                 this.updateWelcomeMessage();
             }
+            
+            // Load and display suggested questions
+            await this.loadSuggestedQuestions();
 
         } catch (error) {
             console.error('Error initializing chatbot:', error);
@@ -671,6 +722,66 @@ class LTChatbot extends HTMLElement {
         } catch (error) {
             console.error('Error loading chat history:', error);
         }
+    }
+    
+    async loadSuggestedQuestions() {
+        try {
+            const response = await fetch(`${this.apiBase}/chatbots/${this.chatbot.id}/suggested-questions`, {
+                headers: this.getRequestHeaders()
+            });
+            if (response.ok) {
+                const questions = await response.json();
+                if (questions.length > 0) {
+                    this.displaySuggestedQuestions(questions);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading suggested questions:', error);
+        }
+    }
+    
+    displaySuggestedQuestions(questions) {
+        const messagesContainer = this.shadowRoot.getElementById('chat-messages');
+        if (!messagesContainer) return;
+        
+        // Only show suggested questions if there are no existing messages (except welcome)
+        const existingMessages = messagesContainer.querySelectorAll('.message');
+        const hasUserMessages = Array.from(existingMessages).some(msg => msg.classList.contains('user'));
+        
+        if (hasUserMessages) {
+            return; // Don't show suggested questions if user has already started chatting
+        }
+        
+        const suggestedQuestionsDiv = document.createElement('div');
+        suggestedQuestionsDiv.className = 'suggested-questions';
+        suggestedQuestionsDiv.innerHTML = `
+            <div class="suggested-questions-title">Here are some questions you can try:</div>
+            <div class="suggested-questions-buttons">
+                ${questions.map(q => `
+                    <button class="suggested-question-btn" data-question="${q.question_text}">
+                        ${q.question_text}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        
+        // Add click handlers for suggested question buttons
+        suggestedQuestionsDiv.addEventListener('click', (e) => {
+            if (e.target.classList.contains('suggested-question-btn')) {
+                const questionText = e.target.getAttribute('data-question');
+                const messageInput = this.shadowRoot.getElementById('message-input');
+                messageInput.value = questionText;
+                
+                // Remove suggested questions after user clicks one
+                suggestedQuestionsDiv.remove();
+                
+                // Auto-send the message
+                this.sendMessage();
+            }
+        });
+        
+        messagesContainer.appendChild(suggestedQuestionsDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
     
     updateURL() {

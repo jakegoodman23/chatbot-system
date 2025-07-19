@@ -174,6 +174,63 @@ class ChatApp {
         if (welcomeMsg) {
             welcomeMsg.innerHTML = `Hello! I'm <strong>${this.chatbot.name}</strong>. ${this.chatbot.description || 'I can help answer questions based on uploaded documents.'} How can I assist you today?`;
         }
+        
+        // Load and display suggested questions
+        this.loadSuggestedQuestions();
+    }
+    
+    async loadSuggestedQuestions() {
+        try {
+            const response = await fetch(`${API_BASE}/chatbots/${this.chatbot.id}/suggested-questions`);
+            if (response.ok) {
+                const questions = await response.json();
+                if (questions.length > 0) {
+                    this.displaySuggestedQuestions(questions);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading suggested questions:', error);
+        }
+    }
+    
+    displaySuggestedQuestions(questions) {
+        // Only show suggested questions if there are no existing messages (except welcome)
+        const existingMessages = this.chatMessages.querySelectorAll('.message');
+        const hasUserMessages = Array.from(existingMessages).some(msg => msg.classList.contains('user-message'));
+        
+        if (hasUserMessages) {
+            return; // Don't show suggested questions if user has already started chatting
+        }
+        
+        const suggestedQuestionsDiv = document.createElement('div');
+        suggestedQuestionsDiv.className = 'suggested-questions';
+        suggestedQuestionsDiv.innerHTML = `
+            <div class="suggested-questions-title">Here are some questions you can try:</div>
+            <div class="suggested-questions-buttons">
+                ${questions.map(q => `
+                    <button class="suggested-question-btn" data-question="${q.question_text}">
+                        ${q.question_text}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        
+        // Add click handlers for suggested question buttons
+        suggestedQuestionsDiv.addEventListener('click', (e) => {
+            if (e.target.classList.contains('suggested-question-btn')) {
+                const questionText = e.target.getAttribute('data-question');
+                this.messageInput.value = questionText;
+                
+                // Remove suggested questions after user clicks one
+                suggestedQuestionsDiv.remove();
+                
+                // Auto-send the message
+                this.sendMessage();
+            }
+        });
+        
+        this.chatMessages.appendChild(suggestedQuestionsDiv);
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     }
     
     redirectToSelection() {
