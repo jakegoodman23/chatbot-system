@@ -957,3 +957,55 @@ nav {
         width: 100%;
     }
 }
+
+/* Message feedback buttons */
+.message-feedback {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: center;
+}
+
+.feedback-btn {
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.feedback-btn:hover {
+    opacity: 1;
+    background-color: #f7fafc;
+    border-color: #cbd5e0;
+}
+
+.feedback-btn.selected {
+    opacity: 1;
+    background-color: #4299e1;
+    border-color: #4299e1;
+    color: white;
+}
+
+.feedback-btn.thumbs-up.selected {
+    background-color: #48bb78;
+    border-color: #48bb78;
+}
+
+.feedback-btn.thumbs-down.selected {
+    background-color: #f56565;
+    border-color: #f56565;
+}
+
+.feedback-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Ensure feedback buttons don't break message layout */
+.bot-message .message-feedback {
+    justify-content: flex-start;
+}

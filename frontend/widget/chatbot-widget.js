@@ -238,6 +238,58 @@ class LTChatbot extends HTMLElement {
                 border-bottom-left-radius: 4px;
             }
 
+            /* Message feedback buttons */
+            .message-feedback {
+                display: flex;
+                gap: 8px;
+                margin-top: 8px;
+                align-items: center;
+            }
+
+            .feedback-btn {
+                background: none;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                padding: 4px 8px;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                opacity: 0.7;
+                color: var(--text-color);
+            }
+
+            .feedback-btn:hover {
+                opacity: 1;
+                background-color: var(--message-bg);
+                border-color: var(--primary-color);
+            }
+
+            .feedback-btn.selected {
+                opacity: 1;
+                background-color: var(--primary-color);
+                border-color: var(--primary-color);
+                color: white;
+            }
+
+            .feedback-btn.thumbs-up.selected {
+                background-color: #48bb78;
+                border-color: #48bb78;
+            }
+
+            .feedback-btn.thumbs-down.selected {
+                background-color: #f56565;
+                border-color: #f56565;
+            }
+
+            .feedback-btn:disabled {
+                cursor: not-allowed;
+                opacity: 0.5;
+            }
+
+            .message.bot .message-feedback {
+                justify-content: flex-start;
+            }
+
             .chat-input-container {
                 padding: 16px;
                 border-top: 1px solid var(--border-color);
@@ -678,8 +730,8 @@ class LTChatbot extends HTMLElement {
             // Hide typing indicator
             this.hideTypingIndicator();
             
-            // Add bot response
-            this.addMessage(data.response, 'bot');
+            // Add bot response with message ID for feedback
+            this.addMessage(data.response, 'bot', data.message_id);
             
             // Show sources if available
             if (data.context_used && data.sources && data.sources.length > 0) {
@@ -694,7 +746,6 @@ class LTChatbot extends HTMLElement {
             this.addMessage(`Sorry, I encountered an error: ${error.message}`, 'bot');
             this.updateStatus('Error occurred');
         } finally {
-            // Re-enable send button
             sendButton.disabled = false;
         }
     }
@@ -708,15 +759,30 @@ class LTChatbot extends HTMLElement {
             .replace(/\n/g, '<br>');
     }
 
-    addMessage(content, type = 'bot') {
+    addMessage(content, sender, messageId = null) {
         const messagesContainer = this.shadowRoot.getElementById('chat-messages');
         if (!messagesContainer) return;
 
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${type}`;
-        messageDiv.innerHTML = `
-            <div class="message-content">${type === 'bot' ? this.parseMarkdown(content) : content}</div>
-        `;
+        messageDiv.className = `message ${sender}`;
+
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+
+        if (sender === 'user') {
+            messageContent.textContent = content;
+        } else {
+            // Parse markdown for bot messages
+            messageContent.innerHTML = this.parseMarkdown(content);
+        }
+
+        messageDiv.appendChild(messageContent);
+
+        // Add feedback buttons for bot messages (except error messages)
+        if (sender === 'bot' && messageId && !content.includes('Sorry, I encountered an error')) {
+            const feedbackDiv = this.createFeedbackButtons(messageId);
+            messageDiv.appendChild(feedbackDiv);
+        }
 
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -812,6 +878,81 @@ class LTChatbot extends HTMLElement {
 
         messagesContainer.appendChild(sourcesDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    createFeedbackButtons(messageId) {
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'message-feedback';
+        
+        const thumbsUpBtn = document.createElement('button');
+        thumbsUpBtn.className = 'feedback-btn thumbs-up';
+        thumbsUpBtn.innerHTML = '👍';
+        thumbsUpBtn.title = 'This was helpful';
+        thumbsUpBtn.onclick = () => this.submitFeedback(messageId, 'thumbs_up', thumbsUpBtn);
+        
+        const thumbsDownBtn = document.createElement('button');
+        thumbsDownBtn.className = 'feedback-btn thumbs-down';
+        thumbsDownBtn.innerHTML = '👎';
+        thumbsDownBtn.title = 'This was not helpful';
+        thumbsDownBtn.onclick = () => this.submitFeedback(messageId, 'thumbs_down', thumbsDownBtn);
+        
+        feedbackDiv.appendChild(thumbsUpBtn);
+        feedbackDiv.appendChild(thumbsDownBtn);
+        
+        return feedbackDiv;
+    }
+
+    async submitFeedback(messageId, feedbackType, button) {
+        try {
+            const response = await fetch(`${this.apiBase}/chat/feedback`, {
+                method: 'POST',
+                headers: this.getRequestHeaders(),
+                body: JSON.stringify({
+                    message_id: messageId,
+                    feedback_type: feedbackType
+                })
+            });
+
+            if (response.ok) {
+                // Update button visual state
+                const feedbackDiv = button.parentElement;
+                const buttons = feedbackDiv.querySelectorAll('.feedback-btn');
+                
+                // Reset all buttons
+                buttons.forEach(btn => {
+                    btn.classList.remove('selected');
+                    btn.disabled = false;
+                });
+                
+                // Mark selected button
+                button.classList.add('selected');
+                
+                // Show brief confirmation
+                const originalContent = button.innerHTML;
+                button.innerHTML = feedbackType === 'thumbs_up' ? '✓' : '✗';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                }, 1000);
+                
+                console.log(`Feedback submitted: ${feedbackType} for message ${messageId}`);
+                
+            } else {
+                throw new Error('Failed to submit feedback');
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            
+            // Show error state briefly
+            const originalContent = button.innerHTML;
+            button.innerHTML = '⚠️';
+            button.style.opacity = '0.5';
+            
+            setTimeout(() => {
+                button.innerHTML = originalContent;
+                button.style.opacity = '1';
+            }, 2000);
+        }
     }
 }
 

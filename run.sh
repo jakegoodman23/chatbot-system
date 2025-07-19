@@ -1,70 +1,97 @@
 #!/bin/bash
 
-# Local Chatbot Startup Script
+# ChatBot System Runner
+# This script helps run the chatbot system and manage database migrations
 
-echo "🤖 Starting Local Chatbot..."
+set -e
 
-# Check if .env file exists
-if [ ! -f .env ]; then
-    echo "⚠️  No .env file found. Creating from .env.example..."
-    cp .env.example .env
-    echo "📝 Please edit .env file and add your OpenAI API key, then run this script again."
-    exit 1
-fi
+echo "🚀 ChatBot System Manager"
+echo "========================"
 
-# Check if OpenAI API key is set
-if ! grep -q "OPENAI_API_KEY=sk-" .env; then
-    echo "⚠️  OpenAI API key not found in .env file."
-    echo "📝 Please add your OpenAI API key to the .env file and run this script again."
-    exit 1
-fi
+# Function to run migrations
+run_migrations() {
+    echo "📝 Running database migrations..."
+    
+    if command -v docker-compose &> /dev/null; then
+        echo "Using docker-compose..."
+        docker-compose exec backend python run_migrations.py
+    elif command -v docker &> /dev/null && docker compose ps &> /dev/null; then
+        echo "Using docker compose..."
+        docker compose exec backend python run_migrations.py
+    else
+        echo "⚠️  Docker not available. To run migrations manually:"
+        echo "1. Ensure PostgreSQL is running with the correct database"
+        echo "2. Set DATABASE_URL environment variable"
+        echo "3. Run: python backend/run_migrations.py"
+        echo ""
+        echo "Required migrations:"
+        echo "- 001_add_chatbots.sql"
+        echo "- 002_migrate_to_chatbots.sql" 
+        echo "- 003_add_message_feedback.sql (NEW - for thumbs up/down feature)"
+        echo ""
+        echo "New features added:"
+        echo "✅ Thumbs up/down feedback on chat messages"
+        echo "✅ Feedback statistics API endpoints"
+        echo "✅ Frontend UI for message feedback"
+        echo "✅ Widget support for feedback buttons"
+    fi
+}
 
-# Check if Docker is running
-if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker is not running. Please start Docker and try again."
-    exit 1
-fi
+# Function to start services
+start_services() {
+    echo "🏃 Starting services..."
+    
+    if command -v docker-compose &> /dev/null; then
+        docker-compose up -d
+    elif command -v docker &> /dev/null; then
+        docker compose up -d
+    else
+        echo "⚠️  Docker not available. To run manually:"
+        echo "1. Start PostgreSQL server"
+        echo "2. Set environment variables (see .env.example)"
+        echo "3. Install Python dependencies: pip install -r backend/requirements.txt"
+        echo "4. Run backend: cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+        echo "5. Serve frontend files on a web server"
+    fi
+}
 
-echo "🐳 Starting services with Docker Compose..."
-docker-compose up -d
-
-echo "⏳ Waiting for services to be ready..."
-sleep 10
-
-# Check if services are healthy
-echo "🔍 Checking service health..."
-
-# Check database
-if docker-compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
-    echo "✅ Database is ready"
-else
-    echo "❌ Database is not ready"
-fi
-
-# Check backend
-if curl -s http://localhost:8000/health > /dev/null; then
-    echo "✅ Backend is ready"
-else
-    echo "❌ Backend is not ready"
-fi
-
-# Check frontend
-if curl -s http://localhost:3000 > /dev/null; then
-    echo "✅ Frontend is ready"
-else
-    echo "❌ Frontend is not ready"
-fi
-
-echo ""
-echo "🎉 Local Chatbot is running!"
-echo ""
-echo "📱 Access the application:"
-echo "   Frontend: http://localhost:3000"
-echo "   Backend API: http://localhost:8000"
-echo "   API Docs: http://localhost:8000/docs"
-echo ""
-echo "🛑 To stop the services:"
-echo "   docker-compose down"
-echo ""
-echo "📋 To view logs:"
-echo "   docker-compose logs -f"
+# Main menu
+case "${1:-}" in
+    "migrate" | "migrations")
+        run_migrations
+        ;;
+    "start" | "up")
+        start_services
+        ;;
+    "restart")
+        echo "🔄 Restarting services..."
+        if command -v docker-compose &> /dev/null; then
+            docker-compose restart
+        elif command -v docker &> /dev/null; then
+            docker compose restart
+        fi
+        ;;
+    "logs")
+        echo "📋 Showing logs..."
+        if command -v docker-compose &> /dev/null; then
+            docker-compose logs -f
+        elif command -v docker &> /dev/null; then
+            docker compose logs -f
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {migrate|start|restart|logs}"
+        echo ""
+        echo "Commands:"
+        echo "  migrate   - Run database migrations"
+        echo "  start     - Start all services"
+        echo "  restart   - Restart all services" 
+        echo "  logs      - Show service logs"
+        echo ""
+        echo "🆕 New Feedback Feature:"
+        echo "This update adds thumbs up/down feedback capability to chat messages."
+        echo "Users can now rate bot responses, and admins can view feedback statistics."
+        echo ""
+        echo "To apply the new feature, run: $0 migrate"
+        ;;
+esac

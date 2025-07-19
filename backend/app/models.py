@@ -81,6 +81,18 @@ class ChatMessage(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     session = relationship("ChatSession", back_populates="messages")
+    feedback = relationship("MessageFeedback", back_populates="message", cascade="all, delete-orphan")
+
+class MessageFeedback(Base):
+    __tablename__ = "message_feedback"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("chat_messages.id", ondelete="CASCADE"), nullable=False)
+    feedback_type = Column(String(20), nullable=False)  # 'thumbs_up' or 'thumbs_down'
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    message = relationship("ChatMessage", back_populates="feedback")
 
 class AdminSettings(Base):
     __tablename__ = "admin_settings"
