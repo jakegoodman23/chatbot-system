@@ -23,6 +23,7 @@ class Chatbot(Base):
     name = Column(String(255), unique=True, nullable=False, index=True)
     description = Column(Text)
     system_prompt = Column(Text, nullable=False)
+    admin_email = Column(String(255), nullable=False)  # Email for human support notifications
     settings = Column(JSON, default={})
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -32,6 +33,8 @@ class Chatbot(Base):
     documents = relationship("Document", secondary=chatbot_documents, back_populates="chatbots")
     # One-to-many relationship with chat sessions
     chat_sessions = relationship("ChatSession", back_populates="chatbot", cascade="all, delete-orphan")
+    # One-to-many relationship with human support requests
+    human_support_requests = relationship("HumanSupportRequest", back_populates="chatbot", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -81,6 +84,36 @@ class ChatMessage(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     session = relationship("ChatSession", back_populates="messages")
+
+class HumanSupportRequest(Base):
+    __tablename__ = "human_support_requests"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(String(255), unique=True, nullable=False, index=True)
+    chatbot_id = Column(Integer, ForeignKey("chatbots.id", ondelete="CASCADE"))
+    session_id = Column(String(255), ForeignKey("chat_sessions.session_id", ondelete="CASCADE"))
+    user_name = Column(String(255))  # Optional user name
+    user_email = Column(String(255))  # Optional user email
+    initial_message = Column(Text, nullable=False)  # Why they want human help
+    status = Column(String(50), default="pending")  # pending, active, resolved, closed
+    admin_joined_at = Column(DateTime)
+    resolved_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    chatbot = relationship("Chatbot", back_populates="human_support_requests")
+    messages = relationship("HumanSupportMessage", back_populates="support_request", cascade="all, delete-orphan")
+
+class HumanSupportMessage(Base):
+    __tablename__ = "human_support_messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    support_request_id = Column(Integer, ForeignKey("human_support_requests.id", ondelete="CASCADE"))
+    sender_type = Column(String(50), nullable=False)  # 'user' or 'admin'
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    support_request = relationship("HumanSupportRequest", back_populates="messages")
 
 class AdminSettings(Base):
     __tablename__ = "admin_settings"

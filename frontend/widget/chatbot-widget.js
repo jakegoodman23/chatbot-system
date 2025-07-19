@@ -32,6 +32,9 @@ class LTChatbot extends HTMLElement {
         this.isMinimized = false;
         this.isLoading = true;
         this.typingIndicator = null;
+        this.humanSupportRequest = null;
+        this.websocket = null;
+        this.isHumanSupportActive = false;
         
         // Configuration
         this.config = {
@@ -238,6 +241,13 @@ class LTChatbot extends HTMLElement {
                 border-bottom-left-radius: 4px;
             }
 
+            .message-sender {
+                font-size: 12px;
+                color: #6b7280;
+                margin-bottom: 4px;
+                font-weight: 500;
+            }
+
             .chat-input-container {
                 padding: 16px;
                 border-top: 1px solid var(--border-color);
@@ -248,6 +258,58 @@ class LTChatbot extends HTMLElement {
                 display: flex;
                 gap: 8px;
                 margin-bottom: 8px;
+            }
+
+            .action-buttons {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 8px;
+            }
+
+            .human-support-button {
+                background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .human-support-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            }
+
+            .support-status {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: rgba(34, 197, 94, 0.1);
+                border-radius: 20px;
+                font-size: 14px;
+                color: #16a34a;
+            }
+
+            .status-indicator {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #fbbf24;
+                animation: pulse 2s infinite;
+            }
+
+            .status-indicator.active {
+                background: #22c55e;
+            }
+
+            .status-indicator.resolved {
+                background: #6b7280;
             }
 
             .message-input {
@@ -433,7 +495,7 @@ class LTChatbot extends HTMLElement {
                             type="text" 
                             class="message-input" 
                             id="message-input"
-                            placeholder="${this.config.placeholder}"
+                            placeholder="${this.isHumanSupportActive ? 'Chatting with human support...' : this.config.placeholder}"
                             ${this.isLoading ? 'disabled' : ''}
                         >
                         <button 
@@ -443,6 +505,22 @@ class LTChatbot extends HTMLElement {
                         >
                             Send
                         </button>
+                    </div>
+                    <div class="action-buttons">
+                        ${!this.isHumanSupportActive ? `
+                            <button 
+                                class="human-support-button" 
+                                id="human-support-button"
+                                title="Request human support"
+                            >
+                                👤 Speak to Human
+                            </button>
+                        ` : `
+                            <div class="support-status">
+                                <span class="status-indicator ${this.humanSupportRequest?.status || 'pending'}"></span>
+                                Human Support ${this.humanSupportRequest?.status || 'pending'}
+                            </div>
+                        `}
                     </div>
                     <div class="status" id="status">
                         ${this.isLoading ? 'Connecting...' : 'Ready'}
@@ -455,6 +533,7 @@ class LTChatbot extends HTMLElement {
     bindEvents() {
         const messageInput = this.shadowRoot.getElementById('message-input');
         const sendButton = this.shadowRoot.getElementById('send-button');
+        const humanSupportButton = this.shadowRoot.getElementById('human-support-button');
 
         if (messageInput && sendButton) {
             messageInput.addEventListener('keypress', this.handleKeyPress);
@@ -462,6 +541,10 @@ class LTChatbot extends HTMLElement {
                 sendButton.disabled = !e.target.value.trim() || this.isLoading;
             });
             sendButton.addEventListener('click', this.sendMessage);
+        }
+
+        if (humanSupportButton) {
+            humanSupportButton.addEventListener('click', () => this.requestHumanSupport());
         }
     }
 
@@ -653,11 +736,18 @@ class LTChatbot extends HTMLElement {
         const sendButton = this.shadowRoot.getElementById('send-button');
         sendButton.disabled = true;
 
-        // Show typing indicator
-        this.showTypingIndicator();
-        this.updateStatus('Thinking...');
-
         try {
+            // If human support is active, send message through human support channel
+            if (this.isHumanSupportActive && this.humanSupportRequest) {
+                await this.sendHumanSupportMessage(message);
+                this.updateStatus('Message sent to support');
+                return;
+            }
+
+            // Show typing indicator for bot responses
+            this.showTypingIndicator();
+            this.updateStatus('Thinking...');
+
             const response = await fetch(`${this.apiBase}/chat/`, {
                 method: 'POST',
                 headers: this.getRequestHeaders(),
@@ -691,8 +781,13 @@ class LTChatbot extends HTMLElement {
         } catch (error) {
             console.error('Error sending message:', error);
             this.hideTypingIndicator();
-            this.addMessage(`Sorry, I encountered an error: ${error.message}`, 'bot');
-            this.updateStatus('Error occurred');
+            if (this.isHumanSupportActive) {
+                this.addMessage(`Sorry, there was an error sending your message to support: ${error.message}`, 'bot');
+                this.updateStatus('Error sending to support');
+            } else {
+                this.addMessage(`Sorry, I encountered an error: ${error.message}`, 'bot');
+                this.updateStatus('Error occurred');
+            }
         } finally {
             // Re-enable send button
             sendButton.disabled = false;
@@ -708,13 +803,16 @@ class LTChatbot extends HTMLElement {
             .replace(/\n/g, '<br>');
     }
 
-    addMessage(content, type = 'bot') {
+    addMessage(content, type = 'bot', senderLabel = null) {
         const messagesContainer = this.shadowRoot.getElementById('chat-messages');
         if (!messagesContainer) return;
 
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}`;
+        
+        const senderInfo = senderLabel ? `<div class="message-sender">${senderLabel}</div>` : '';
         messageDiv.innerHTML = `
+            ${senderInfo}
             <div class="message-content">${type === 'bot' ? this.parseMarkdown(content) : content}</div>
         `;
 
@@ -746,6 +844,250 @@ class LTChatbot extends HTMLElement {
         if (this.typingIndicator) {
             this.typingIndicator.remove();
             this.typingIndicator = null;
+        }
+    }
+
+    async requestHumanSupport() {
+        try {
+            // Show modal to collect user details
+            const userDetails = await this.showHumanSupportModal();
+            if (!userDetails) return; // User cancelled
+
+            const response = await fetch(`${this.apiBase}/human-support/request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chatbot_id: this.chatbot.id,
+                    session_id: this.sessionId,
+                    initial_message: userDetails.message,
+                    user_name: userDetails.name,
+                    user_email: userDetails.email
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            this.humanSupportRequest = result;
+            this.isHumanSupportActive = true;
+
+            // Connect to WebSocket for real-time communication
+            this.connectWebSocket(result.request_id);
+
+            // Add system message about human support
+            this.addMessage('bot', result.message);
+            
+            // Re-render to update UI
+            this.render();
+
+        } catch (error) {
+            console.error('Error requesting human support:', error);
+            this.addMessage('bot', 'Sorry, there was an error requesting human support. Please try again.');
+        }
+    }
+
+    showHumanSupportModal() {
+        return new Promise((resolve) => {
+            // Create modal overlay
+            const modalOverlay = document.createElement('div');
+            modalOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            `;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            `;
+
+            modal.innerHTML = `
+                <h3 style="margin: 0 0 20px 0; color: #1a202c;">Request Human Support</h3>
+                <p style="color: #4a5568; margin-bottom: 20px;">Please provide some details so our support team can help you better.</p>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #2d3748; font-weight: 500;">Your Name (Optional)</label>
+                    <input type="text" id="support-name" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #2d3748; font-weight: 500;">Your Email (Optional)</label>
+                    <input type="email" id="support-email" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; color: #2d3748; font-weight: 500;">How can we help? *</label>
+                    <textarea id="support-message" placeholder="Please describe your issue or question..." style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;" required></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="cancel-support" style="padding: 10px 20px; border: 1px solid #e2e8f0; background: white; color: #4a5568; border-radius: 6px; cursor: pointer;">Cancel</button>
+                    <button id="submit-support" style="padding: 10px 20px; border: none; background: #3182ce; color: white; border-radius: 6px; cursor: pointer;">Request Support</button>
+                </div>
+            `;
+
+            modalOverlay.appendChild(modal);
+            document.body.appendChild(modalOverlay);
+
+            // Handle form submission
+            const submitBtn = modal.querySelector('#submit-support');
+            const cancelBtn = modal.querySelector('#cancel-support');
+            const messageTextarea = modal.querySelector('#support-message');
+
+            const cleanup = () => {
+                document.body.removeChild(modalOverlay);
+            };
+
+            submitBtn.addEventListener('click', () => {
+                const name = modal.querySelector('#support-name').value.trim();
+                const email = modal.querySelector('#support-email').value.trim();
+                const message = messageTextarea.value.trim();
+
+                if (!message) {
+                    alert('Please describe how we can help you.');
+                    return;
+                }
+
+                cleanup();
+                resolve({ name, email, message });
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(null);
+            });
+
+            // Close on overlay click
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    cleanup();
+                    resolve(null);
+                }
+            });
+
+            // Focus on message textarea
+            setTimeout(() => messageTextarea.focus(), 100);
+        });
+    }
+
+    connectWebSocket(requestId) {
+        try {
+            const wsUrl = this.apiBase.replace('http://', 'ws://').replace('https://', 'wss://');
+            this.websocket = new WebSocket(`${wsUrl}/human-support/ws/${requestId}`);
+
+            this.websocket.onopen = () => {
+                console.log('WebSocket connected for human support');
+                // Send ping to keep connection alive
+                setInterval(() => {
+                    if (this.websocket.readyState === WebSocket.OPEN) {
+                        this.websocket.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
+            };
+
+            this.websocket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    this.handleWebSocketMessage(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+
+            this.websocket.onclose = () => {
+                console.log('WebSocket connection closed');
+                this.websocket = null;
+            };
+
+            this.websocket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                this.websocket = null;
+            };
+
+        } catch (error) {
+            console.error('Error connecting WebSocket:', error);
+        }
+    }
+
+    handleWebSocketMessage(data) {
+        switch (data.type) {
+            case 'new_message':
+                // Add the message to the chat
+                this.addMessage(
+                    data.data.sender_type === 'admin' ? 'bot' : 'user',
+                    data.data.message,
+                    data.data.sender_type === 'admin' ? 'Support Agent' : null
+                );
+                break;
+
+            case 'admin_joined':
+                this.humanSupportRequest.status = 'active';
+                this.addMessage('bot', data.message);
+                this.render(); // Re-render to update status
+                break;
+
+            case 'request_resolved':
+                this.humanSupportRequest.status = 'resolved';
+                this.addMessage('bot', data.message);
+                this.render(); // Re-render to update status
+                break;
+
+            case 'request_closed':
+                this.humanSupportRequest.status = 'closed';
+                this.addMessage('bot', data.message);
+                this.isHumanSupportActive = false;
+                this.render(); // Re-render to show normal interface
+                break;
+
+            case 'pong':
+                // Keep-alive response
+                break;
+
+            default:
+                console.log('Unknown WebSocket message type:', data.type);
+        }
+    }
+
+    async sendHumanSupportMessage(message) {
+        try {
+            const response = await fetch(`${this.apiBase}/human-support/requests/${this.humanSupportRequest.request_id}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    sender_type: 'user'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Message will be broadcast via WebSocket to all connected clients
+            return await response.json();
+
+        } catch (error) {
+            console.error('Error sending human support message:', error);
+            throw error;
         }
     }
 

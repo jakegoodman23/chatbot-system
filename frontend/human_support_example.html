@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot with Human Support - Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 18px;
+        }
+        
+        .demo-section {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .demo-section h2 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #739CFC;
+        }
+        
+        .feature-card h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-card p {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        
+        .chatbot-demo {
+            border: 2px dashed #e2e8f0;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            background: #fafafa;
+        }
+        
+        .usage-steps {
+            background: #edf2f7;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .usage-steps ol {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        
+        .usage-steps li {
+            margin-bottom: 10px;
+            color: #4a5568;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #38b2ac;
+        }
+        
+        .emoji {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Chatbot with Human Support</h1>
+            <p>Seamless AI-to-Human handoff for better customer experience</p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3><span class="emoji">💬</span> Smart AI Chat</h3>
+                <p>Start with powerful AI assistance that can handle most queries automatically using your knowledge base.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3><span class="emoji">👤</span> Human Support</h3>
+                <p>When AI isn't enough, users can instantly request human support with a single click.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3><span class="emoji">📧</span> Email Notifications</h3>
+                <p>Administrators receive instant email notifications when users request human assistance.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3><span class="emoji">⚡</span> Real-time Chat</h3>
+                <p>WebSocket-powered real-time communication between users and support agents.</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎯 How It Works</h2>
+            <div class="usage-steps">
+                <ol>
+                    <li><strong>User starts chatting</strong> with the AI chatbot</li>
+                    <li><strong>If AI can't help</strong>, user clicks "👤 Speak to Human"</li>
+                    <li><strong>User provides details</strong> about their issue (optional name/email)</li>
+                    <li><strong>Admin gets email notification</strong> instantly</li>
+                    <li><strong>Admin joins conversation</strong> from the admin panel</li>
+                    <li><strong>Real-time chat begins</strong> between user and support agent</li>
+                    <li><strong>Issue is resolved</strong> and request is closed</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🚀 Live Demo</h2>
+            <div class="chatbot-demo">
+                <p style="margin-bottom: 20px; color: #4a5568;">
+                    Try the chatbot below and click "Speak to Human" to see the human support feature in action!
+                </p>
+                
+                <!-- Chatbot Widget will be embedded here -->
+                <lt-chatbot 
+                    data-id="1" 
+                    data-mode="inline" 
+                    data-api-base="http://localhost:8000"
+                    data-height="500px"
+                    data-title="Customer Support"
+                    data-placeholder="Ask me anything or request human support..."
+                    style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;"
+                ></lt-chatbot>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🛠️ Integration</h2>
+            <p>Add this chatbot to any website with just a few lines of code:</p>
+            
+            <div class="code-block">
+&lt;!-- Include the chatbot widget script --&gt;
+&lt;script src="widget/chatbot-widget.js"&gt;&lt;/script&gt;
+
+&lt;!-- Add the chatbot to your page --&gt;
+&lt;lt-chatbot 
+    data-id="YOUR_CHATBOT_ID" 
+    data-mode="floating" 
+    data-api-base="https://your-api-domain.com"
+    data-title="Customer Support"
+&gt;&lt;/lt-chatbot&gt;
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📋 Configuration Options</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Widget Modes</h3>
+                    <p><strong>inline</strong> - Embedded in page<br>
+                    <strong>floating</strong> - Floating chat bubble<br>
+                    <strong>modal</strong> - Opens in modal<br>
+                    <strong>sidebar</strong> - Side panel</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>Email Setup</h3>
+                    <p>Configure SMTP settings in environment variables to enable email notifications for human support requests.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>Admin Dashboard</h3>
+                    <p>Access the admin panel to manage chatbots, view support requests, and engage with users in real-time.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>Customization</h3>
+                    <p>Customize colors, styling, messages, and behavior to match your brand and requirements.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="highlight">
+            <h3>🎉 Ready to Get Started?</h3>
+            <p>
+                1. <strong>Create a chatbot</strong> in the admin panel with your email address<br>
+                2. <strong>Upload documents</strong> to train your AI<br>
+                3. <strong>Embed the widget</strong> on your website<br>
+                4. <strong>Monitor support requests</strong> in the admin dashboard
+            </p>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔧 Admin Features</h2>
+            <p>Visit the <a href="admin.html" target="_blank" style="color: #739CFC; text-decoration: none;">Admin Panel</a> to:</p>
+            <ul style="font-size: 16px; line-height: 1.8; color: #4a5568;">
+                <li>Create and manage chatbots with admin email addresses</li>
+                <li>View all pending and active support requests</li>
+                <li>Join conversations and chat with users in real-time</li>
+                <li>Resolve and close support requests</li>
+                <li>Monitor system activity and performance</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Load the chatbot widget -->
+    <script src="widget/chatbot-widget.js"></script>
+    
+    <script>
+        // Optional: Add some demo interaction
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Human Support Demo Page Loaded');
+            
+            // You could add additional JavaScript here for demo purposes
+            // For example, simulating admin notifications, etc.
+        });
+    </script>
+</body>
+</html>

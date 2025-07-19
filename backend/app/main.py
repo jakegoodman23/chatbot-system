@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import chat, documents, admin, chatbots
+from .routers import chat, documents, admin, chatbots, human_support
 from .database import engine
 from .models import Base
 import os
@@ -28,6 +28,7 @@ app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(admin.router)
 app.include_router(chatbots.router)
+app.include_router(human_support.router)
 
 @app.get("/")
 async def root():
