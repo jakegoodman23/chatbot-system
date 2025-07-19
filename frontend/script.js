@@ -174,6 +174,63 @@ class ChatApp {
         if (welcomeMsg) {
             welcomeMsg.innerHTML = `Hello! I'm <strong>${this.chatbot.name}</strong>. ${this.chatbot.description || 'I can help answer questions based on uploaded documents.'} How can I assist you today?`;
         }
+        
+        // Load and display suggested questions
+        this.loadSuggestedQuestions();
+    }
+    
+    async loadSuggestedQuestions() {
+        try {
+            const response = await fetch(`${API_BASE}/chatbots/${this.chatbot.id}/suggested-questions`);
+            if (response.ok) {
+                const questions = await response.json();
+                if (questions.length > 0) {
+                    this.displaySuggestedQuestions(questions);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading suggested questions:', error);
+        }
+    }
+    
+    displaySuggestedQuestions(questions) {
+        // Only show suggested questions if there are no existing messages (except welcome)
+        const existingMessages = this.chatMessages.querySelectorAll('.message');
+        const hasUserMessages = Array.from(existingMessages).some(msg => msg.classList.contains('user-message'));
+        
+        if (hasUserMessages) {
+            return; // Don't show suggested questions if user has already started chatting
+        }
+        
+        const suggestedQuestionsDiv = document.createElement('div');
+        suggestedQuestionsDiv.className = 'suggested-questions';
+        suggestedQuestionsDiv.innerHTML = `
+            <div class="suggested-questions-title">Here are some questions you can try:</div>
+            <div class="suggested-questions-buttons">
+                ${questions.map(q => `
+                    <button class="suggested-question-btn" data-question="${q.question_text}">
+                        ${q.question_text}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        
+        // Add click handlers for suggested question buttons
+        suggestedQuestionsDiv.addEventListener('click', (e) => {
+            if (e.target.classList.contains('suggested-question-btn')) {
+                const questionText = e.target.getAttribute('data-question');
+                this.messageInput.value = questionText;
+                
+                // Remove suggested questions after user clicks one
+                suggestedQuestionsDiv.remove();
+                
+                // Auto-send the message
+                this.sendMessage();
+            }
+        });
+        
+        this.chatMessages.appendChild(suggestedQuestionsDiv);
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     }
     
     redirectToSelection() {
@@ -276,7 +333,12 @@ class ChatApp {
                 // Add historical messages
                 data.history.forEach(msg => {
                     this.addMessage(msg.message, 'user');
-                    this.addMessage(msg.response, 'bot');
+                    this.addMessage(msg.response, 'bot', msg.id);
+                    
+                    // Apply feedback state if exists
+                    if (msg.feedback) {
+                        this.applyFeedbackState(msg.id, msg.feedback.type);
+                    }
                 });
                 
                 this.status.textContent = `Loaded ${data.returned_messages} messages from history`;
@@ -284,6 +346,26 @@ class ChatApp {
         } catch (error) {
             console.error('Error loading chat history:', error);
             this.status.textContent = 'Could not load chat history';
+        }
+    }
+
+    applyFeedbackState(messageId, feedbackType) {
+        // Find the feedback buttons for this message
+        const messages = this.chatMessages.querySelectorAll('.bot-message');
+        for (const messageDiv of messages) {
+            const feedbackDiv = messageDiv.querySelector('.message-feedback');
+            if (feedbackDiv) {
+                const buttons = feedbackDiv.querySelectorAll('.feedback-btn');
+                const targetClass = feedbackType === 'thumbs_up' ? 'thumbs-up' : 'thumbs-down';
+                
+                buttons.forEach(btn => btn.classList.remove('selected'));
+                
+                const targetButton = feedbackDiv.querySelector(`.${targetClass}`);
+                if (targetButton) {
+                    targetButton.classList.add('selected');
+                }
+                break;
+            }
         }
     }
 
@@ -447,7 +529,7 @@ class ChatApp {
                 // Hide typing indicator before showing response
                 this.hideTypingIndicator();
                 
-                this.addMessage(data.response, 'bot');
+                this.addMessage(data.response, 'bot', data.message_id);
                 
                 // Show context sources if available
                 if (data.context_used && data.sources.length > 0) {
@@ -476,7 +558,7 @@ class ChatApp {
         }
     }
 
-    addMessage(content, type) {
+    addMessage(content, type, messageId = null) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}-message`;
         
@@ -492,10 +574,94 @@ class ChatApp {
         }
         
         messageDiv.appendChild(contentDiv);
+        
+        // Add feedback buttons for bot messages (except error messages)
+        if (type === 'bot' && messageId && !content.includes('Sorry, I encountered an error')) {
+            const feedbackDiv = this.createFeedbackButtons(messageId);
+            messageDiv.appendChild(feedbackDiv);
+        }
+        
         this.chatMessages.appendChild(messageDiv);
         
         // Scroll to bottom
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+
+    createFeedbackButtons(messageId) {
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'message-feedback';
+        
+        const thumbsUpBtn = document.createElement('button');
+        thumbsUpBtn.className = 'feedback-btn thumbs-up';
+        thumbsUpBtn.innerHTML = '👍';
+        thumbsUpBtn.title = 'This was helpful';
+        thumbsUpBtn.onclick = () => this.submitFeedback(messageId, 'thumbs_up', thumbsUpBtn);
+        
+        const thumbsDownBtn = document.createElement('button');
+        thumbsDownBtn.className = 'feedback-btn thumbs-down';
+        thumbsDownBtn.innerHTML = '👎';
+        thumbsDownBtn.title = 'This was not helpful';
+        thumbsDownBtn.onclick = () => this.submitFeedback(messageId, 'thumbs_down', thumbsDownBtn);
+        
+        feedbackDiv.appendChild(thumbsUpBtn);
+        feedbackDiv.appendChild(thumbsDownBtn);
+        
+        return feedbackDiv;
+    }
+
+    async submitFeedback(messageId, feedbackType, button) {
+        try {
+            const response = await fetch(`${API_BASE}/chat/feedback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message_id: messageId,
+                    feedback_type: feedbackType
+                })
+            });
+
+            if (response.ok) {
+                // Update button visual state
+                const feedbackDiv = button.parentElement;
+                const buttons = feedbackDiv.querySelectorAll('.feedback-btn');
+                
+                // Reset all buttons
+                buttons.forEach(btn => {
+                    btn.classList.remove('selected');
+                    btn.disabled = false;
+                });
+                
+                // Mark selected button
+                button.classList.add('selected');
+                
+                // Show brief confirmation
+                const originalContent = button.innerHTML;
+                button.innerHTML = feedbackType === 'thumbs_up' ? '✓' : '✗';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                }, 1000);
+                
+                console.log(`Feedback submitted: ${feedbackType} for message ${messageId}`);
+                
+            } else {
+                throw new Error('Failed to submit feedback');
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            
+            // Show error state briefly
+            const originalContent = button.innerHTML;
+            button.innerHTML = '⚠️';
+            button.style.opacity = '0.5';
+            
+            setTimeout(() => {
+                button.innerHTML = originalContent;
+                button.style.opacity = '1';
+            }, 2000);
+        }
     }
 
     showContextSources(sources) {

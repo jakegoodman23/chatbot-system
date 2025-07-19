@@ -25,6 +25,11 @@ class ChatResponse(BaseModel):
     session_id: str
     context_used: bool
     sources: List[str]
+    message_id: int  # Add message_id for feedback functionality
+
+class FeedbackRequest(BaseModel):
+    message_id: int
+    feedback_type: str  # 'thumbs_up' or 'thumbs_down'
 
 @router.post("/", response_model=ChatResponse)
 async def chat(
@@ -131,6 +136,38 @@ async def get_session_info(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving session info: {str(e)}")
+
+@router.post("/feedback")
+async def submit_feedback(
+    request: FeedbackRequest,
+    db: Session = Depends(get_db)
+):
+    """Submit thumbs up/down feedback for a chat message"""
+    if request.feedback_type not in ['thumbs_up', 'thumbs_down']:
+        raise HTTPException(status_code=400, detail="Invalid feedback type. Must be 'thumbs_up' or 'thumbs_down'")
+    
+    try:
+        result = await chat_service.submit_message_feedback(
+            request.message_id, request.feedback_type, db
+        )
+        return {"message": "Feedback submitted successfully", "feedback_id": result.id}
+    
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error submitting feedback: {str(e)}")
+
+@router.get("/feedback/stats/{chatbot_id}")
+async def get_feedback_stats(
+    chatbot_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get feedback statistics for a chatbot"""
+    try:
+        stats = await chat_service.get_feedback_stats(chatbot_id, db)
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting feedback stats: {str(e)}")
 
 @router.get("/health")
 async def health_check():

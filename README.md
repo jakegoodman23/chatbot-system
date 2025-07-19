@@ -8,6 +8,8 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 - 📄 **Per-chatbot document management** - Each chatbot has its own isolated document collection
 - 🔍 **RAG-powered responses** using OpenAI embeddings and completions with vector similarity search
 - 💬 **Modern chat interface** with markdown support, typing indicators, and session management
+- 👍 **Message feedback system** - Users can give thumbs up/down feedback on bot responses
+- 💬 **Suggested questions** - Pre-loaded questions help users get started quickly
 - ⚙️ **Comprehensive admin panel** with chatbot creation, document management, and analytics
 - 🔗 **Embeddable widgets** - Generate embed codes to add chatbots to any website
 - 🐳 **Docker containerization** for easy deployment and development
@@ -54,7 +56,7 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 
 5. **Access the application**:
    - **Chatbot Selection**: http://localhost:3000/select.html
-   - **Chat Interface**: http://localhost:3000/index.html (redirects to selection if no chatbot chosen)
+   - **Chat Interface**: http://localhost:3000/index.html
    - **Admin Panel**: http://localhost:3000/admin.html
    - **Backend API**: http://localhost:8000
    - **API Documentation**: http://localhost:8000/docs
@@ -71,13 +73,17 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 3. **Upload Documents**: Click "📄 Manage Documents" on your chatbot
    - Upload PDF or TXT files relevant to this chatbot's purpose
    - Documents are processed and embedded automatically
+4. **Add Suggested Questions**: Click "💬 Suggested Questions"
+   - Add helpful starter questions for users
+   - Questions appear as clickable buttons in the chat interface
 
 ### Chatting with Your Bots
 
 1. **Select Chatbot**: Go to http://localhost:3000/select.html
 2. **Choose a chatbot** from the available options
-3. **Start chatting**: Ask questions related to the uploaded documents
-4. **Switch chatbots**: Use "← Back to Selection" to try different bots
+3. **Start chatting**: Click suggested questions or type your own
+4. **Provide feedback**: Use 👍/👎 buttons to rate responses
+5. **Switch chatbots**: Use "← Back to Selection" to try different bots
 
 ### Embedding Chatbots
 
@@ -106,7 +112,7 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
    ```bash
    cd backend
    pip install -r requirements.txt
-   python run_migrations.py  # Run database migrations
+   python run_migrations.py
    uvicorn app.main:app --reload --port 8000
    ```
 
@@ -114,7 +120,6 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
    ```bash
    cd frontend
    python -m http.server 3000
-   # Or use any static file server
    ```
 
 ### API Endpoints
@@ -133,19 +138,22 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 
 **Chat & Sessions:**
 - `POST /chat/` - Send message to chatbot
+- `POST /chat/feedback` - Submit thumbs up/down feedback for a message
+- `GET /chat/feedback/stats/{chatbot_id}` - Get feedback statistics for a chatbot
 - `POST /chat/sessions` - Create new chat session
 - `GET /chat/sessions/{session_id}/history` - Get chat history
+
+**Suggested Questions:**
+- `GET /chatbots/{chatbot_id}/suggested-questions` - Get suggested questions for a chatbot
+- `POST /chatbots/{chatbot_id}/suggested-questions` - Create a new suggested question
+- `PUT /chatbots/{chatbot_id}/suggested-questions/{question_id}` - Update a suggested question
+- `DELETE /chatbots/{chatbot_id}/suggested-questions/{question_id}` - Delete a suggested question
 
 **Document Management:**
 - `POST /documents/upload` - Upload document to specific chatbot
 - `GET /documents/?chatbot_id={id}` - List documents for chatbot
 - `GET /documents/{id}` - Get document details
 - `DELETE /documents/{id}` - Delete document
-- `POST /documents/search` - Search document chunks
-
-**Admin & Analytics:**
-- `GET /chatbots/stats/all` - Get statistics for all chatbots
-- `GET /chatbots/{id}/stats` - Get specific chatbot statistics
 
 ### Environment Variables
 
@@ -159,38 +167,6 @@ A locally-hosted multi-chatbot platform with document ingestion capabilities, bu
 | `CHUNK_SIZE` | Text chunk size for embeddings | `1000` |
 | `CHUNK_OVERLAP` | Overlap between chunks | `200` |
 | `TOP_K_RESULTS` | Number of similar chunks to retrieve | `5` |
-
-## Project Structure
-
-```
-chatbot-local/
-├── backend/                    # FastAPI backend
-│   ├── app/
-│   │   ├── routers/           # API route handlers
-│   │   │   ├── admin.py       # Admin authentication
-│   │   │   ├── chat.py        # Chat and sessions
-│   │   │   ├── chatbots.py    # Chatbot management
-│   │   │   └── documents.py   # Document handling
-│   │   ├── services/          # Business logic
-│   │   │   ├── chat_service.py
-│   │   │   ├── chatbot_service.py
-│   │   │   ├── document_processor.py
-│   │   │   └── embeddings.py
-│   │   ├── database.py        # Database connection
-│   │   ├── models.py          # SQLAlchemy models
-│   │   └── main.py           # FastAPI app
-│   ├── migrations/           # Database migrations
-│   └── requirements.txt
-├── frontend/                 # Static frontend files
-│   ├── index.html           # Main chat interface
-│   ├── select.html          # Chatbot selection page
-│   ├── admin.html           # Admin panel
-│   ├── script.js            # Chat functionality
-│   ├── select.js            # Selection page logic
-│   └── style.css            # Styling
-├── docker-compose.yml       # Container orchestration
-└── README.md
-```
 
 ## Key Features Explained
 
@@ -208,92 +184,11 @@ chatbot-local/
 
 ### User Experience
 - **Chatbot Selection**: Intuitive interface to choose between chatbots
+- **Suggested Questions**: Pre-loaded questions help users get started quickly
 - **Markdown Support**: Rich text formatting in responses
+- **Message Feedback**: Thumbs up/down feedback on bot responses for quality tracking
 - **Responsive Design**: Works on desktop and mobile devices
 - **Session Management**: Persistent chat history per session
-
-## Deployment
-
-### Production Deployment
-
-1. **Set up environment**:
-   ```bash
-   # Copy and configure environment variables
-   cp .env.example .env
-   # Set OPENAI_API_KEY and other production values
-   ```
-
-2. **Deploy with Docker**:
-   ```bash
-   docker-compose up -d --build
-   ```
-
-3. **Run migrations**:
-   ```bash
-   docker-compose exec backend python run_migrations.py
-   ```
-
-### Scaling Considerations
-- Use a managed PostgreSQL service for production
-- Consider Redis for session management at scale
-- Implement proper logging and monitoring
-- Set up reverse proxy (nginx) for SSL termination
-- Consider OpenAI API rate limiting for high traffic
-
-## Troubleshooting
-
-### Common Issues
-
-1. **500 error on sessions endpoint**:
-   - Run database migrations: `docker-compose exec backend python run_migrations.py`
-   - Check that `chatbot_id` column exists in `chat_sessions` table
-
-2. **"No chatbots available" message**:
-   - Create a chatbot in the admin panel first
-   - Ensure chatbot is activated (not deactivated)
-
-3. **Upload fails**:
-   - Verify file is PDF or TXT format
-   - Check that chatbot exists and is active
-   - Ensure backend has write permissions to uploads directory
-
-4. **No relevant answers**:
-   - Upload documents relevant to the chatbot's purpose
-   - Check document content was extracted properly
-   - Verify documents are associated with the correct chatbot
-
-5. **OpenAI API errors**:
-   - Verify `OPENAI_API_KEY` is set correctly
-   - Check API key has sufficient credits
-   - Monitor API rate limits
-
-### Logs and Debugging
-
-View container logs:
-```bash
-# Backend logs
-docker-compose logs backend
-
-# Database logs  
-docker-compose logs postgres
-
-# All services
-docker-compose logs
-```
-
-Check database migrations:
-```bash
-docker-compose exec backend python run_migrations.py
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly with multiple chatbots
-5. Update documentation if needed
-6. Submit a pull request
 
 ## License
 
