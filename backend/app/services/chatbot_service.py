@@ -8,7 +8,7 @@ class ChatbotService:
     def __init__(self):
         pass
     
-    def create_chatbot(self, db: Session, name: str, description: str, system_prompt: str, settings: dict = None) -> Chatbot:
+    def create_chatbot(self, db: Session, name: str, description: str, system_prompt: str, admin_email: str, settings: dict = None) -> Chatbot:
         """Create a new chatbot"""
         if settings is None:
             settings = {}
@@ -17,6 +17,7 @@ class ChatbotService:
             name=name,
             description=description,
             system_prompt=system_prompt,
+            admin_email=admin_email,
             settings=settings
         )
         db.add(chatbot)

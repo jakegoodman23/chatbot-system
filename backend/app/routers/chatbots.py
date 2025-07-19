@@ -14,12 +14,14 @@ class ChatbotCreate(BaseModel):
     name: str
     description: Optional[str] = None
     system_prompt: str
+    admin_email: str
     settings: Optional[Dict[str, Any]] = None
 
 class ChatbotUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     system_prompt: Optional[str] = None
+    admin_email: Optional[str] = None
     settings: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
 
@@ -28,6 +30,7 @@ class ChatbotResponse(BaseModel):
     name: str
     description: Optional[str]
     system_prompt: str
+    admin_email: str
     settings: Dict[str, Any]
     is_active: bool
     created_at: str
@@ -61,6 +64,7 @@ async def get_chatbots(
                 name=chatbot.name,
                 description=chatbot.description,
                 system_prompt=chatbot.system_prompt,
+                admin_email=chatbot.admin_email,
                 settings=chatbot.settings or {},
                 is_active=chatbot.is_active,
                 created_at=chatbot.created_at.isoformat(),
@@ -94,6 +98,7 @@ async def create_chatbot(
             name=request.name,
             description=request.description,
             system_prompt=request.system_prompt,
+            admin_email=request.admin_email,
             settings=request.settings
         )
         
@@ -102,6 +107,7 @@ async def create_chatbot(
             name=chatbot.name,
             description=chatbot.description,
             system_prompt=chatbot.system_prompt,
+            admin_email=chatbot.admin_email,
             settings=chatbot.settings or {},
             is_active=chatbot.is_active,
             created_at=chatbot.created_at.isoformat(),
@@ -129,6 +135,7 @@ async def get_chatbot(
             name=chatbot.name,
             description=chatbot.description,
             system_prompt=chatbot.system_prompt,
+            admin_email=chatbot.admin_email,
             settings=chatbot.settings or {},
             is_active=chatbot.is_active,
             created_at=chatbot.created_at.isoformat(),
@@ -167,6 +174,11 @@ async def update_chatbot(
                 raise HTTPException(status_code=400, detail="System prompt cannot be empty")
             update_data['system_prompt'] = request.system_prompt
         
+        if request.admin_email is not None:
+            if not request.admin_email.strip():
+                raise HTTPException(status_code=400, detail="Admin email cannot be empty")
+            update_data['admin_email'] = request.admin_email
+        
         if request.settings is not None:
             update_data['settings'] = request.settings
         
@@ -182,6 +194,7 @@ async def update_chatbot(
             name=chatbot.name,
             description=chatbot.description,
             system_prompt=chatbot.system_prompt,
+            admin_email=chatbot.admin_email,
             settings=chatbot.settings or {},
             is_active=chatbot.is_active,
             created_at=chatbot.created_at.isoformat(),
